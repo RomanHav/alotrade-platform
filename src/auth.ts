@@ -4,6 +4,7 @@ import Credentials from "next-auth/providers/credentials"
 import { prisma } from "@/lib/prisma"
 import bcrypt from "bcryptjs"
 import { z } from "zod"
+import type { Role } from "@prisma/client"
 
 const credentialsSchema = z.object({
     email: z.email(),
@@ -12,8 +13,13 @@ const credentialsSchema = z.object({
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
     adapter: PrismaAdapter(prisma),
-    session: { strategy: "database" },
-    pages: { signIn: "/login" },
+
+
+    session: { strategy: "jwt" },
+
+    pages: { signIn: "/sign-in" },
+    trustHost: true,
+
     providers: [
         Credentials({
             credentials: {
@@ -28,23 +34,32 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
                 const user = await prisma.user.findUnique({ where: { email } })
                 if (!user || !user.passwordHash) return null
 
-                const valid = await bcrypt.compare(password, user.passwordHash)
-                if (!valid) return null
+                const ok = await bcrypt.compare(password, user.passwordHash)
+                if (!ok) return null
+
 
                 return {
                     id: user.id,
                     email: user.email ?? undefined,
                     name: user.name ?? undefined,
-                    role: user.role,
+                    role: user.role as Role,
                 }
             },
         }),
     ],
+
     callbacks: {
-        async session({ session, user }) {
+        async jwt({ token, user }) {
+            if (user) {
+                token.id = user.id
+                token.role = user.role
+            }
+            return token
+        },
+        async session({ session, token }) {
             if (session.user) {
-                ;(session.user).id = user.id
-                ;(session.user).role = user.role
+                session.user.id = token.id as string
+                session.user.role = token.role as Role
             }
             return session
         },

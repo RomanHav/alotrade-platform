@@ -1,13 +1,14 @@
 "use client"
 
 import { useState, FormEvent } from "react"
-import { Card, CardHeader, CardTitle, CardContent, CardFooter } from "@/components/ui/card"
+import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card"
 import { Label } from "@/components/ui/label"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { useRouter, useSearchParams } from "next/navigation"
+import { signIn } from "next-auth/react" // ✅ клиентский хелпер
 
-export default function LoginPage() {
+export default function SignInPage() {
     const [email, setEmail] = useState("")
     const [password, setPassword] = useState("")
     const [loading, setLoading] = useState(false)
@@ -21,22 +22,19 @@ export default function LoginPage() {
         setLoading(true)
         setError(null)
         try {
-            // вызываем API next-auth
-            const res = await fetch("/api/auth/callback/credentials", {
-                method: "POST",
-                headers: { "Content-Type": "application/x-www-form-urlencoded" },
-                body: new URLSearchParams({
-                    csrf: "",
-                    email,
-                    password,
-                    callbackUrl,
-                    json: "true",
-                }),
+            const res = await signIn("credentials", {
+                email,
+                password,
+                callbackUrl,
+                redirect: false, // управляем редиректом сами
             })
-            const data = await res.json()
-            if (data?.url) router.push(data.url)
-            else setError("Неверный email или пароль")
-        } catch (err) {
+
+            if (res?.ok && res.url) {
+                router.push(res.url) // обычно это callbackUrl
+            } else {
+                setError("Неверный email или пароль")
+            }
+        } catch {
             setError("Ошибка входа")
         } finally {
             setLoading(false)
