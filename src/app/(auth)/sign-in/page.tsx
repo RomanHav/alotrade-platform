@@ -4,12 +4,15 @@ import Image from "next/image";
 
 export const dynamic = "force-dynamic";
 
-export default function Page({
+export default async function SignInPage({
   searchParams,
 }: {
-  searchParams?: { callbackUrl?: string };
+    searchParams?: Promise<Record<string, string | string[] | undefined>>
 }) {
-  const callbackUrl = searchParams?.callbackUrl ?? "/dashboard";
+    const sp = (await searchParams) ?? {}
+    const raw = sp["callbackUrl"]
+    const callbackUrl =
+        Array.isArray(raw) ? (raw[0] ?? "/dashboard") : (raw || "/dashboard")
   return (
     <Suspense fallback={null}>
       <div className="w-full p-5 flex flex-col items-center gap-24">
