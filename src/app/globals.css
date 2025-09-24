@@ -1,9 +1,15 @@
 @import "tailwindcss";
-@import "tailwindcss/preflight";
-@import "tw-animate-css";
 @plugin "tailwindcss-animate";
-@tailwind utilities;
+
+
 @custom-variant dark (&:is(.dark *));
+
+@layer base {
+    :where(h1, h2, h3, h4, h5, h6) {
+        font-size: inherit;
+        font-weight: inherit;
+    }
+}
 
 @theme inline {
   --color-background: var(--background);
