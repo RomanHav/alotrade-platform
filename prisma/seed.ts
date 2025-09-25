@@ -1,6 +1,6 @@
 // prisma/seed.ts
-import { PrismaClient, Role } from "@prisma/client";
-import bcrypt from "bcryptjs";
+import { PrismaClient, Role } from '@prisma/client';
+import bcrypt from 'bcryptjs';
 
 const prisma = new PrismaClient();
 
@@ -9,10 +9,10 @@ async function main() {
   const pwd = process.env.SEED_ADMIN_PASSWORD;
 
   if (!email) {
-    throw new Error("Missing SEED_ADMIN_EMAIL in environment");
+    throw new Error('Missing SEED_ADMIN_EMAIL in environment');
   }
   if (!pwd) {
-    throw new Error("Missing SEED_ADMIN_PASSWORD in environment");
+    throw new Error('Missing SEED_ADMIN_PASSWORD in environment');
   }
 
   const passwordHash = await bcrypt.hash(pwd, 12);
@@ -22,13 +22,13 @@ async function main() {
     update: {},
     create: {
       email,
-      name: "CMS Admin",
+      name: 'Анна Т.',
       role: Role.ADMIN,
       passwordHash,
     },
   });
 
-  console.log("Seeded admin:", email);
+  console.log('Seeded admin:', email);
 }
 
 main()

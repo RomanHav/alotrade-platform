@@ -11,9 +11,7 @@ datasource db {
 
 enum Role {
   ADMIN
-  EDITOR
   MANAGER
-  VIEWER
 }
 
 model User {
@@ -24,7 +22,7 @@ model User {
   image         String?
 
   passwordHash String?
-  role         Role    @default(VIEWER)
+  role         Role    @default(MANAGER)
 
   accounts Account[]
   sessions Session[]
