@@ -1,12 +1,14 @@
-import { Suspense } from "react";
-import SignInForm from "./SignInForm";
-import Image from "next/image";
+// src/app/(auth)/sign-in/page.tsx
+import Image from "next/image"
+import { signIn } from "@/auth"
+import { redirect } from "next/navigation"
+import SignInForm from "./SignInForm"
 
-export const dynamic = "force-dynamic";
+export const dynamic = "force-dynamic"
 
 export default async function SignInPage({
-  searchParams,
-}: {
+                                             searchParams,
+                                         }: {
     searchParams?: Promise<Record<string, string | string[] | undefined>>
 }) {
     const sp = (await searchParams) ?? {}
