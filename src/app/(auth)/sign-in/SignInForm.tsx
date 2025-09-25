@@ -22,7 +22,7 @@ export default function SignInForm({
 
   const handleClick = () => {
     setClick(!click);
-    alert("Зверніться до адміністратора для скидання пароля");
+    alert("Зверніться до адміністратора для зміни паролю.");
   };
 
   async function onSubmit(e: FormEvent) {
