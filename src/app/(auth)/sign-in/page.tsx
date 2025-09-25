@@ -16,7 +16,7 @@ export default async function SignInPage({
   return (
     <Suspense fallback={null}>
       <div className="w-full p-5 flex flex-col items-center gap-24">
-        <Image src={"logo.svg"} alt="Logo" width={250} height={166} />
+        <Image src={"/logo.svg"} alt="Logo" width={250} height={166} />
         <SignInForm callbackUrl={callbackUrl} />
       </div>
     </Suspense> 
