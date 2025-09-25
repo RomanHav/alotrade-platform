@@ -13,12 +13,26 @@ const credentialsSchema = z.object({
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
   adapter: PrismaAdapter(prisma),
-  session: { strategy: "jwt" },
-
+  session: { strategy: "jwt",
+      maxAge: 2 * 60 * 60,
+      updateAge: 30 * 60,
+  },
   pages: { signIn: "/sign-in" },
   trustHost: true,
-  debug: true,
-
+    cookies: {
+        sessionToken: {
+            name:
+                process.env.NODE_ENV === "production"
+                    ? "__Secure-authjs.session-token"
+                    : "authjs.session-token",
+            options: {
+                httpOnly: true,
+                sameSite: "lax",
+                path: "/",
+                secure: process.env.NODE_ENV === "production",
+            },
+        },
+    },
   providers: [
     Credentials({
       credentials: {
