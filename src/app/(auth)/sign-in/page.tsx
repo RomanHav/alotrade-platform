@@ -1,8 +1,7 @@
-// src/app/(auth)/sign-in/page.tsx
+
 import Image from "next/image"
-import { signIn } from "@/auth"
-import { redirect } from "next/navigation"
 import SignInForm from "./SignInForm"
+import { Suspense } from "react"
 
 export const dynamic = "force-dynamic"
 
