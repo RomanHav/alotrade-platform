@@ -17,14 +17,21 @@ export default async function SignInPage({
 
     async function login(formData: FormData) {
         "use server"
-        const email = String(formData.get("email") || "")
-        const password = String(formData.get("password") || "")
-        if (!email || !password) redirect("/sign-in?error=MissingCredentials")
-        await signIn("credentials", {
-            email,
-            password,
-            redirectTo: callbackUrl, // серверный редирект, никаких JSON на клиенте
-        })
+        try {
+            const email = String(formData.get("email") || "")
+            const password = String(formData.get("password") || "")
+            if (!email || !password) redirect("/sign-in?error=MissingCredentials")
+
+            await signIn("credentials", {
+                email,
+                password,
+                redirectTo: callbackUrl,
+            })
+        } catch (err) {
+            console.error("[sign-in action error]", err)
+            // опционально: перекинь с кодом
+            redirect("/sign-in?error=AuthFailed")
+        }
     }
 
     return (
