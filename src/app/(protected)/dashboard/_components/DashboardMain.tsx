@@ -34,7 +34,7 @@ export default function DashboardMain({ userName = 'користувачу' }: D
     <div className="px-4 pt-16 md:px-8 2xl:px-10">
       <div className={'mb-8 flex items-center gap-5'}>
         <h1 className="text-4xl font-semibold md:text-4xl">Доброго дня, {userName}</h1>
-        <Link href={'https://alcotrade.com.ua'} target={'_blank'}>
+        <Link href={'https://alcotrade.com.ua'} target={'_blank'} title="Переглянути сайт">
           <EyeIcon size={24} />
         </Link>
       </div>
