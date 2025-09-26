@@ -4,6 +4,7 @@ import { LogOut, Settings } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
 import type { Role } from '@prisma/client';
+import { logout } from '@/app/(protected)/actions';
 
 type ProfileBadgeProps = {
   user: {
@@ -13,8 +14,8 @@ type ProfileBadgeProps = {
 };
 
 const roleLabel: Record<Role, string> = {
-  ADMIN: 'Admin',
-  MANAGER: 'Manager',
+  ADMIN: 'Адмін',
+  MANAGER: 'Менеджер',
 };
 
 export default function ProfileBadge({ user }: ProfileBadgeProps) {
@@ -29,12 +30,19 @@ export default function ProfileBadge({ user }: ProfileBadgeProps) {
           </div>
         </div>
         <div className="flex items-center gap-3">
-          <Link href="/settings" aria-label="Settings">
-            <Settings className="h-5 w-5 stroke-black" />
+          <Link href="/settings" className={'cursor-pointer'} aria-label="Settings">
+            <Settings className="h-5 w-5 stroke-neutral-900" />
           </Link>
-          <Link href={'/sign-in'} aria-label="Log out">
-            <LogOut className="h-5 w-5 stroke-black" />
-          </Link>
+          <form className={'h-5'} action={logout}>
+            <button
+              type="submit"
+              aria-label="Log out"
+              title="Вийти"
+              className="cursor-pointer disabled:opacity-50"
+            >
+              <LogOut className="h-5 w-5 stroke-neutral-900" />
+            </button>
+          </form>
         </div>
       </div>
     </div>
