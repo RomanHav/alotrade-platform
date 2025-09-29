@@ -1,13 +1,29 @@
 'use client';
+
 import { Button } from '@/components/ui/button';
 import ThemeSettings from './ThemeSettings';
 import ProfileSettings from './ProfileSettings';
 import SearchEnginesSettings from './SearchEnginesSettings';
 import UserAndRolesTable from './UsersTable/UsersAndRolesTable';
+import { useEffect, useState } from 'react';
 
 export default function SettingsMain() {
+
+  const [add, setAdd] = useState(false);
+
+  useEffect(() => {
+    if (add) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = '';
+    }
+    return () => {
+      document.body.style.overflow = '';
+    };
+  }, [add]);
+
   return (
-    <div className="px-4 pt-16">
+    <div className={`px-4 pt-16`}>
       <div className="mb-9 flex items-center justify-between">
         <h1 className="text-4xl">Налаштування</h1>
         <Button className="cursor-pointer">Зберегти</Button>
@@ -16,7 +32,7 @@ export default function SettingsMain() {
         <ThemeSettings />
         <ProfileSettings />
         <SearchEnginesSettings />
-        <UserAndRolesTable />
+        <UserAndRolesTable add={add} setAdd={setAdd} />
       </div>
     </div>
   );

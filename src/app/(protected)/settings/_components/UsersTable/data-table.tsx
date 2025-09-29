@@ -1,6 +1,7 @@
 'use client';
 
 import * as React from 'react';
+import useSWR from 'swr';
 import {
   useReactTable,
   getCoreRowModel,
@@ -22,88 +23,28 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { columns, User } from './columns';
 
-/* демо-дані (українські імена/ролі) */
-const data: User[] = [
-  {
-    id: 'm5gr84i9',
-    username: 'Анна Т.',
-    role: 'Адмін',
-    image: '/avatar.jpg',
-    password: 'password123',
-  },
-  {
-    id: '3u1reuv4',
-    username: 'Олександр К.',
-    role: 'Менеджер',
-    image: '/example.jpg',
-    password: 'password1236',
-  },
-  {
-    id: 'derv1ws0',
-    username: 'Антоніна Л.',
-    role: 'Менеджер',
-    image: '/example.jpg',
-    password: 'password1234',
-  },
-  {
-    id: '5kma53ae',
-    username: 'Ірина П.',
-    role: 'Менеджер',
-    image: '/example.jpg',
-    password: 'prd12345',
-  },
-  {
-    id: 'bhqecj4p',
-    username: 'Павло С.',
-    role: 'Менеджер',
-    image: '/example.jpg',
-    password: 'pas345678',
-  },
-  // нові
-  {
-    id: 'u1x9a2b3',
-    username: 'Богдан Р.',
-    role: 'Менеджер',
-    image: '/example.jpg',
-    password: 'qwerty123',
-  },
-  {
-    id: 'k7m4n5p6',
-    username: 'Світлана М.',
-    role: 'Менеджер',
-    image: '/example.jpg',
-    password: 'hello2024',
-  },
-  {
-    id: 'z9q8w7e6',
-    username: 'Марія Д.',
-    role: 'Менеджер',
-    image: '/example.jpg',
-    password: 'letmein42',
-  },
-  {
-    id: 't2y3u4i5',
-    username: 'Дмитро Б.',
-    role: 'Менеджер',
-    image: '/example.jpg',
-    password: 'secure777',
-  },
-  {
-    id: 'r6f5g4h3',
-    username: 'Катерина Ж.',
-    role: 'Менеджер',
-    image: '/example.jpg',
-    password: 'testpass9',
-  },
-];
+const fetcher = (url: string) =>
+  fetch(url, { cache: 'no-store' }).then(async (r) => {
+    const data = await r.json();
+    if (!r.ok || data?.ok === false) throw new Error(data?.error || 'Помилка завантаження');
+    return data;
+  });
 
 export function DataTable() {
+  const { data, error, isLoading } = useSWR<{ ok: boolean; users: User[] }>(
+    '/api/users',
+    fetcher,
+    { revalidateOnFocus: false }
+  );
+
+  const rows = data?.users ?? [];
+
   const [sorting, setSorting] = React.useState<SortingState>([]);
   const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>([]);
   const [rowSelection, setRowSelection] = React.useState({});
 
   const table = useReactTable({
-    data,
+    data: rows,
     columns,
     state: { sorting, columnFilters, rowSelection },
     onSortingChange: setSorting,
@@ -118,9 +59,11 @@ export function DataTable() {
 
   const selectedCount = table.getSelectedRowModel().rows.length;
 
+  if (isLoading) return <div className="p-4">Завантаження…</div>;
+  if (error) return <div className="p-4 text-red-600">Помилка: {(error as Error).message}</div>;
+
   return (
     <div className="w-full">
-      {/* Топ-бар: фільтр ліворуч, "Видалити обране" праворуч (показуємо лише якщо є вибрані) */}
       <div className="flex items-center gap-2 py-4">
         <Input
           placeholder="Фільтр за користувачем…"
@@ -134,7 +77,7 @@ export function DataTable() {
             variant="destructive"
             className="ml-auto"
             onClick={() => {
-              /* поки без логіки видалення */
+             
             }}
           >
             Видалити обране
@@ -144,7 +87,6 @@ export function DataTable() {
 
       <div className="overflow-hidden rounded-md border">
         <Table>
-          {/* заголовки по центру */}
           <TableHeader>
             {table.getHeaderGroups().map((headerGroup) => (
               <TableRow key={headerGroup.id}>
@@ -161,7 +103,6 @@ export function DataTable() {
             ))}
           </TableHeader>
 
-          {/* рендер пагінованих рядків */}
           <TableBody>
             {table.getPaginationRowModel().rows.length ? (
               table.getPaginationRowModel().rows.map((row) => (
@@ -186,7 +127,6 @@ export function DataTable() {
         </Table>
       </div>
 
-      {/* Низ: текст сторінки по центру, кнопки праворуч */}
       <div className="flex items-center py-4">
         <div className="flex-1" />
         <span className="text-muted-foreground flex-1 text-center text-sm">
@@ -196,7 +136,7 @@ export function DataTable() {
           <Button onClick={() => table.previousPage()} disabled={!table.getCanPreviousPage()}>
             Попередня
           </Button>
-          <Button onClick={() => table.nextPage()} disabled={!table.getCanNextPage()}>
+        <Button onClick={() => table.nextPage()} disabled={!table.getCanNextPage()}>
             Наступна
           </Button>
         </div>
