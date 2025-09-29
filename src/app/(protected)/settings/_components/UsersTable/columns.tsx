@@ -1,11 +1,10 @@
 'use client';
 
-import { useState } from 'react';
 import { ColumnDef, Table, Row } from '@tanstack/react-table';
 import Image from 'next/image';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
-import { ArrowUp, ArrowDown, ArrowUpDown, MoreHorizontal, Eye, EyeOff } from 'lucide-react';
+import { ArrowUp, ArrowDown, ArrowUpDown, MoreHorizontal } from 'lucide-react';
 import {
   DropdownMenu,
   DropdownMenuTrigger,
@@ -23,10 +22,8 @@ export type User = {
   password: string;
 };
 
-/* --- український коллатор для сортування --- */
 const ukCollator = new Intl.Collator('uk', { sensitivity: 'base', ignorePunctuation: true });
 
-/* --- чекбокси вибору --- */
 function SelectAllCheckbox({ table }: { table: Table<User> }) {
   const some = table.getIsSomePageRowsSelected();
   const all = table.getIsAllPageRowsSelected();
@@ -55,27 +52,15 @@ function RowCheckbox({ row }: { row: Row<User> }) {
   );
 }
 
-/* --- клітинка пароля (пароль по центру, «око» рівно в колонці) --- */
-function PasswordCell({ value }: { value: string }) {
-  const [show, setShow] = useState(false);
-  const masked = '•'.repeat(value?.length || 8);
+// Пароль: завжди маска, без перемикача
+function PasswordMaskedCell() {
   return (
-    <div className="flex items-center justify-center gap-2">
-      {/* фіксована ширина для стабільного вирівнювання іконки */}
-      <span className="font-mono select-all text-center w-36">{show ? value : masked}</span>
-      <Button
-        variant="ghost"
-        size="icon"
-        aria-label={show ? 'Сховати пароль' : 'Показати пароль'}
-        onClick={() => setShow((s) => !s)}
-      >
-        {show ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-      </Button>
+    <div className="flex items-center justify-center">
+      <span className="w-36 select-none text-center font-mono">••••••••</span>
     </div>
   );
 }
 
-/* --- колонки таблиці --- */
 export const columns: ColumnDef<User>[] = [
   {
     id: 'select',
@@ -103,10 +88,12 @@ export const columns: ColumnDef<User>[] = [
               alt={alt}
               width={40}
               height={40}
-              className="h-10 w-10 rounded-sm object-cover border"
+              className="h-10 w-10 rounded-sm border object-cover"
             />
           ) : (
-            <div className="h-10 w-10 rounded-sm border flex items-center justify-center text-xs">—</div>
+            <div className="flex h-10 w-10 items-center justify-center rounded-sm border text-xs">
+              —
+            </div>
           )}
         </div>
       );
@@ -115,7 +102,7 @@ export const columns: ColumnDef<User>[] = [
   {
     accessorKey: 'username',
     header: ({ column }) => {
-      const isSorted = column.getIsSorted(); // 'asc' | 'desc' | false
+      const isSorted = column.getIsSorted();
       return (
         <Button
           variant="ghost"
@@ -151,7 +138,7 @@ export const columns: ColumnDef<User>[] = [
     accessorKey: 'password',
     header: 'Пароль',
     enableSorting: false,
-    cell: ({ row }) => <PasswordCell value={row.getValue('password') as string} />,
+    cell: () => <PasswordMaskedCell />,
   },
   {
     id: 'actions',
@@ -176,8 +163,9 @@ export const columns: ColumnDef<User>[] = [
                 Скопіювати ID користувача
               </DropdownMenuItem>
               <DropdownMenuSeparator />
-              {/* "Переглянути профіль" прибрано */}
-              <DropdownMenuItem>Скинути пароль</DropdownMenuItem>
+              <DropdownMenuItem onClick={() => { /* відкриття модалки зміни паролю */ }}>
+                Змінити пароль
+              </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
         </div>

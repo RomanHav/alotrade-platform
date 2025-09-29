@@ -1,46 +1,64 @@
+'use client';
+
 import { Button } from '@/components/ui/button';
-import UploadButtonPhoto from '@/components/ui/UploadPhotoButton';
+import UploadPhotoButton from '@/components/ui/UploadPhotoButton';
 import Image from 'next/image';
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
 export default function ProfileSettings() {
-  const avatar = '/avatar.jpg';
-  const fileInputRef = useRef<HTMLInputElement | null>(null);
-  const [preview, setPreview] = useState<string>(avatar);
+  const defaultAvatar = process.env.NEXT_PUBLIC_DEFAULT_USER_IMAGE ?? '/avatar.jpg';
 
-  const handleButtonClick = () => {
-    fileInputRef.current?.click();
-  };
+  const [preview, setPreview] = useState<string>(defaultAvatar);
+  const lastObjectUrlRef = useRef<string | null>(null);
 
-  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (file) {
-      const imageUrl = URL.createObjectURL(file);
-      setPreview(imageUrl);
-
-      console.log('Вибраний файл:', file);
+  async function handleSelect(file: File) {
+    if (lastObjectUrlRef.current) {
+      URL.revokeObjectURL(lastObjectUrlRef.current);
+      lastObjectUrlRef.current = null;
     }
+    const localUrl = URL.createObjectURL(file);
+    lastObjectUrlRef.current = localUrl;
+    setPreview(localUrl);
+  }
+
+  useEffect(() => {
+    return () => {
+      if (lastObjectUrlRef.current) {
+        URL.revokeObjectURL(lastObjectUrlRef.current);
+      }
+    };
+  }, []);
+
+  const resetToDefault = () => {
+    if (lastObjectUrlRef.current) {
+      URL.revokeObjectURL(lastObjectUrlRef.current);
+      lastObjectUrlRef.current = null;
+    }
+    setPreview(defaultAvatar);
   };
 
   return (
     <div className="flex flex-col gap-4">
       <h2 className="text-2xl">Профіль</h2>
+
       <div className="flex items-center gap-4">
         <Image
-          src={`${preview}`}
+          src={preview}
           alt="Avatar"
           width={96}
           height={96}
-          className="rounded-lg border border-neutral-200"
+          className="rounded-lg border border-neutral-200 object-cover"
+          unoptimized
         />
+
         <div className="flex flex-col gap-2.5">
           <span>Завантажити фото</span>
-          <UploadButtonPhoto
-            handleButtonClick={handleButtonClick}
-            handleFileChange={handleFileChange}
-            fileInputRef={fileInputRef}
-          />
-          <Button variant="destructive" size="sm" className='cursor-pointer'>
+
+          <UploadPhotoButton onFileSelected={handleSelect}>
+            Змінити
+          </UploadPhotoButton>
+
+          <Button variant="destructive" size="sm" onClick={resetToDefault} className="cursor-pointer">
             Видалити
           </Button>
         </div>
