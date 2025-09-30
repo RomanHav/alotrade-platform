@@ -11,7 +11,7 @@ type SP = Record<string, string | string[] | undefined>;
 
 function isSP(v: unknown): v is SP {
   if (!v || typeof v !== 'object') return false;
-  // Простенька перевірка ключів -> значення: string | string[] | undefined
+  
   return Object.values(v as Record<string, unknown>).every(
     (val) =>
       typeof val === 'string' ||
@@ -23,7 +23,7 @@ function isSP(v: unknown): v is SP {
 export default async function Page({
   searchParams,
 }: {
-  // Сумісно з Next (який передає Promise<any>), але без 'any'
+
   searchParams?: Promise<unknown>;
 }) {
   const session = await auth();
@@ -37,7 +37,7 @@ export default async function Page({
   return (
     <div className="flex w-full flex-col items-center gap-24 p-5">
       <div className="relative h-[166px] w-[250px]">
-        {/* світлий логотип */}
+        
         <Image
           src="/logo.svg"
           alt="Logo"
@@ -46,7 +46,7 @@ export default async function Page({
           className="block dark:hidden"
           priority
         />
-        {/* темний логотип */}
+       
         <Image
           src="/dark-logo.svg"
           alt="Logo dark"

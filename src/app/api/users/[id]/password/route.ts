@@ -1,15 +1,11 @@
-import { NextResponse } from 'next/server';
+import { NextResponse, type NextRequest } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import bcrypt from 'bcryptjs';
 import { Prisma } from '@prisma/client';
 
-type RouteContext = {
-  params: { id: string };
-};
-
-export async function PATCH(req: Request, { params }: RouteContext) {
+export async function PATCH(req: NextRequest, { params }: { params: { id: string } }) {
   try {
-    const userId = params?.id;
+    const userId = params.id;
     if (!userId) {
       return NextResponse.json({ ok: false, error: 'Не передано id користувача' }, { status: 400 });
     }
@@ -20,7 +16,6 @@ export async function PATCH(req: Request, { params }: RouteContext) {
     if (!password) {
       return NextResponse.json({ ok: false, error: 'Пароль обовʼязковий' }, { status: 400 });
     }
-
     if (password.length < 8) {
       return NextResponse.json(
         { ok: false, error: 'Пароль має містити щонайменше 8 символів' },
@@ -41,7 +36,6 @@ export async function PATCH(req: Request, { params }: RouteContext) {
     if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === 'P2025') {
       return NextResponse.json({ ok: false, error: 'Користувача не знайдено' }, { status: 404 });
     }
-
     const message = err instanceof Error ? err.message : 'Невідома помилка';
     return NextResponse.json({ ok: false, error: message }, { status: 500 });
   }
