@@ -22,6 +22,7 @@ export async function GET() {
       select: {
         id: true,
         name: true,
+        email: true,
         role: true,
         image: true,
       },
@@ -33,6 +34,7 @@ export async function GET() {
     const formatted = users.map((u) => ({
       id: u.id,
       username: u.name ?? '',
+      email: u.email ?? '',
       role: toUkRole(u.role),
       image: u.image ?? DEFAULT_USER_IMAGE ?? '/avatar.jpg',
       password: '',
@@ -40,6 +42,7 @@ export async function GET() {
 
     return NextResponse.json({ ok: true, users: formatted }, { status: 200 });
   } catch (e: unknown) {
+    console.error(e);
     return NextResponse.json(
       { ok: false, error: 'Не вдалося отримати користувачів' },
       { status: 500 },
@@ -96,5 +99,28 @@ export async function POST(req: Request) {
     }
 
     return NextResponse.json({ ok: false, error: 'Невідома помилка' }, { status: 500 });
+  }
+}
+
+export async function DELETE(req: Request) {
+  try {
+    const body = await req.json().catch(() => ({}));
+    const ids: string[] | undefined = Array.isArray(body?.ids) ? body.ids : undefined;
+
+    if (!ids || ids.length === 0) {
+      return NextResponse.json(
+        { ok: false, error: 'Потрібен масив ids для видалення' },
+        { status: 400 },
+      );
+    }
+
+    const result = await prisma.user.deleteMany({
+      where: { id: { in: ids } },
+    });
+
+    return NextResponse.json({ ok: true, deleted: result.count }, { status: 200 });
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : 'Невідома помилка';
+    return NextResponse.json({ ok: false, error: message }, { status: 500 });
   }
 }
