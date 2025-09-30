@@ -3,7 +3,7 @@ import { notFound } from 'next/navigation';
 import BrandForm from '../../_components/BrandForm';
 
 export default async function EditBrandPage({ params }: { params: { id: string } }) {
-  const { id } = await params;
+  const { id } = params;
 
   const brand = await prisma.brand.findUnique({
     where: { id },

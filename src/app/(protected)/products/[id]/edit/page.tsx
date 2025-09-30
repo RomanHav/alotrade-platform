@@ -26,7 +26,7 @@ type ProductFormData = {
 };
 
 export default async function EditProductPage({ params }: { params: { id: string } }) {
-  const { id } = await params;
+  const { id } = params;
   const product = await prisma.product.findUnique({
     where: { id },
     include: {
