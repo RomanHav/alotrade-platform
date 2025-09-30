@@ -2,22 +2,18 @@
 import { prisma } from '@/lib/prisma';
 import { notFound } from 'next/navigation';
 import ProductForm from '../../_components/ProductForm';
-import { ProductStatus } from '@prisma/client';
 
-// Типы формы (совпадают с твоими в компоненте)
+// Типы формы (при необходимости импортируй из компонента)
 type VariantForm = {
   id?: string;
   label?: string;
   volumeMl?: number;
-  sku?: string;
-  priceCents?: number;
   position: number;
 };
-
 type ProductFormData = {
   id?: string;
   name?: string;
-  status: ProductStatus;
+  status: 'ACTIVE' | 'DRAFT' | 'ARCHIVE';
   brandId?: string;
   description?: string;
   seoTitle?: string;
@@ -25,8 +21,9 @@ type ProductFormData = {
   variants: VariantForm[];
 };
 
-export default async function EditProductPage({ params }: { params: { id: string } }) {
-  const { id } = params;
+export default async function EditProductPage({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
+
   const product = await prisma.product.findUnique({
     where: { id },
     include: {
@@ -38,11 +35,11 @@ export default async function EditProductPage({ params }: { params: { id: string
 
   if (!product) notFound();
 
-  // Prisma → ProductFormData (null → undefined; только нужные поля)
+  // Маппим Prisma → ProductFormData
   const formProduct: ProductFormData = {
     id: product.id,
     name: product.name,
-    status: product.status,
+    status: product.status as ProductFormData['status'], // у тебя enum с 'ARCHIVE'
     brandId: product.brandId,
     description: product.description ?? undefined,
     seoTitle: product.seoTitle ?? undefined,
