@@ -14,12 +14,19 @@ enum Role {
   MANAGER
 }
 
+enum Theme {
+  LIGHT
+  DARK
+  DEFAULT
+}
+
 model User {
   id            String    @id @default(cuid())
   name          String?
   email         String?   @unique
   emailVerified DateTime?
   image         String?
+  theme         Theme     @default(DEFAULT)
 
   passwordHash String?
   role         Role    @default(MANAGER)
@@ -66,4 +73,112 @@ model VerificationToken {
   expires    DateTime
 
   @@unique([identifier, token])
+}
+
+// PRODUCT
+enum ProductStatus {
+  DRAFT
+  ARCHIVE
+  ACTIVE
+}
+
+model MediaAsset {
+  id       String  @id @default(cuid())
+  url      String
+  alt      String?
+  width    Int?
+  height   Int?
+  mimeType String?
+  blurHash String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  ProductImage ProductImage[]
+
+  Product Product[]
+
+  Brand Brand[]
+}
+
+model Product {
+  id          String        @id @default(cuid())
+  name        String
+  slug        String        @unique
+  description String?
+  status      ProductStatus @default(DRAFT)
+  brandId     String
+  brand       Brand         @relation(fields: [brandId], references: [id])
+
+  coverId String?
+  cover   MediaAsset?    @relation(fields: [coverId], references: [id])
+  images  ProductImage[]
+
+  variants ProductVariant[]
+
+  seoTitle       String?
+  seoDescription String?
+
+  publishedAt DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@index([name])
+  @@index([status])
+  @@index([brandId])
+}
+
+model ProductVariant {
+  id        String  @id @default(cuid())
+  productId String
+  product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  label    String?
+  volumeMl Int?
+  position Int     @default(0)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([productId])
+}
+
+model ProductImage {
+  productId String
+  mediaId   String
+  position  Int    @default(0)
+
+  product Product    @relation(fields: [productId], references: [id], onDelete: Cascade)
+  media   MediaAsset @relation(fields: [mediaId], references: [id], onDelete: Cascade)
+
+  @@id([productId, mediaId])
+  @@index([position])
+}
+
+enum BrandStatus {
+  DRAFT
+  ACTIVE
+  ARCHIVE
+}
+
+model Brand {
+  id          String      @id @default(cuid())
+  name        String
+  slug        String      @unique
+  description String?
+  status      BrandStatus @default(DRAFT)
+
+  seoTitle       String?
+  seoDescription String?
+
+  coverId String?
+  cover   MediaAsset? @relation(fields: [coverId], references: [id])
+
+  products Product[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([name])
+  @@index([status])
 }
