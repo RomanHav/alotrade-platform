@@ -3,9 +3,12 @@ import { prisma } from '@/lib/prisma';
 import bcrypt from 'bcryptjs';
 import { Prisma } from '@prisma/client';
 
-export async function PATCH(req: NextRequest, { params }: { params: { id: string } }) {
+export async function PATCH(req: NextRequest) {
   try {
-    const userId = params.id;
+    const { pathname } = req.nextUrl;
+    const match = pathname.match(/\/api\/users\/([^/]+)\/password$/);
+    const userId = match?.[1];
+
     if (!userId) {
       return NextResponse.json({ ok: false, error: 'Не передано id користувача' }, { status: 400 });
     }
@@ -16,6 +19,7 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
     if (!password) {
       return NextResponse.json({ ok: false, error: 'Пароль обовʼязковий' }, { status: 400 });
     }
+
     if (password.length < 8) {
       return NextResponse.json(
         { ok: false, error: 'Пароль має містити щонайменше 8 символів' },
@@ -23,7 +27,7 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
       );
     }
 
-    const passwordHash = await bcrypt.hash(password, 12);
+    const passwordHash = await bcrypt.hash(password, 8);
 
     const updated = await prisma.user.update({
       where: { id: userId },
