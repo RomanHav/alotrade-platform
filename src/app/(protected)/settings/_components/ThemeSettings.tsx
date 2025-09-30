@@ -38,7 +38,7 @@ export default function ThemeSettings() {
       <Tabs
         value={theme}
         onValueChange={(val) => setTheme(val as 'light' | 'dark' | 'system')}
-        className="w-1/2"
+        className="w-xl"
       >
         <TabsList className="grid w-full grid-cols-3">
           <TabsTrigger value="light">Світла</TabsTrigger>

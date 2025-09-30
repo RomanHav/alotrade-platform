@@ -21,7 +21,7 @@ const roleLabel: Record<Role, string> = {
 export default function ProfileBadge({ user }: ProfileBadgeProps) {
   return (
     <div className="px-2">
-      <div className="flex justify-between rounded-lg bg-neutral-200 p-2.5">
+      <div className="flex justify-between rounded-lg shadow-sm bg-neutral-50 dark:bg-neutral-900 p-2.5">
         <div className="flex items-center gap-4">
           <Image src={'/avatar.jpg'} alt="Avatar" width={50} height={50} className="rounded-sm" />
           <div className="flex flex-col gap-0.5">
@@ -31,7 +31,7 @@ export default function ProfileBadge({ user }: ProfileBadgeProps) {
         </div>
         <div className="flex items-center gap-3">
           <Link href="/settings" className={'cursor-pointer'} aria-label="Settings">
-            <Settings className="h-5 w-5 stroke-neutral-900" />
+            <Settings className="h-5 w-5 stroke-neutral-900 dark:stroke-neutral-50" />
           </Link>
           <form className={'h-5'} action={logout}>
             <button
@@ -40,7 +40,7 @@ export default function ProfileBadge({ user }: ProfileBadgeProps) {
               title="Вийти"
               className="cursor-pointer disabled:opacity-50"
             >
-              <LogOut className="h-5 w-5 stroke-neutral-900" />
+              <LogOut className="h-5 w-5 stroke-neutral-900 dark:stroke-neutral-50" />
             </button>
           </form>
         </div>

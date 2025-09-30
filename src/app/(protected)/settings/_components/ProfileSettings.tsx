@@ -42,23 +42,28 @@ export default function ProfileSettings() {
       <h2 className="text-2xl">Профіль</h2>
 
       <div className="flex items-center gap-4">
-        <Image
-          src={preview}
-          alt="Avatar"
-          width={96}
-          height={96}
-          className="rounded-lg border border-neutral-200 object-cover"
-          unoptimized
-        />
+        <div className="relative flex h-28 w-28 items-center overflow-hidden rounded-lg border border-neutral-200">
+          <Image
+            src={preview}
+            alt="Avatar"
+            fill
+            className="object-cover"
+            sizes="112px"
+            unoptimized
+          />
+        </div>
 
         <div className="flex flex-col gap-2.5">
           <span>Завантажити фото</span>
 
-          <UploadPhotoButton onFileSelected={handleSelect}>
-            Змінити
-          </UploadPhotoButton>
+          <UploadPhotoButton onFileSelected={handleSelect}>Змінити</UploadPhotoButton>
 
-          <Button variant="destructive" size="sm" onClick={resetToDefault} className="cursor-pointer">
+          <Button
+            variant="destructive"
+            size="sm"
+            onClick={resetToDefault}
+            className="cursor-pointer"
+          >
             Видалити
           </Button>
         </div>

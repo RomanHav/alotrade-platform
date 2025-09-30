@@ -1,5 +1,6 @@
 'use client';
 
+import * as React from 'react';
 import { ColumnDef, Table, Row } from '@tanstack/react-table';
 import Image from 'next/image';
 import { Button } from '@/components/ui/button';
@@ -13,11 +14,13 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
 } from '@/components/ui/dropdown-menu';
+import { useAddUserModal } from './context';
 
 export type User = {
   id: string;
   username: string;
-  role: string;
+  email: string; 
+  role: string;  
   image: string;
   password: string;
 };
@@ -52,11 +55,36 @@ function RowCheckbox({ row }: { row: Row<User> }) {
   );
 }
 
-// Пароль: завжди маска, без перемикача
 function PasswordMaskedCell() {
   return (
     <div className="flex items-center justify-center">
       <span className="w-36 select-none text-center font-mono">••••••••</span>
+    </div>
+  );
+}
+
+function ActionCell({ user }: { user: User }) {
+  const { openWith } = useAddUserModal();
+  return (
+    <div className="flex justify-center">
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Button variant="ghost" className="h-8 w-8 p-0">
+            <span className="sr-only">Відкрити меню</span>
+            <MoreHorizontal />
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end">
+          <DropdownMenuLabel>Дії</DropdownMenuLabel>
+          <DropdownMenuItem onClick={() => navigator.clipboard.writeText(user.id)}>
+            Скопіювати ID користувача
+          </DropdownMenuItem>
+          <DropdownMenuSeparator />
+          <DropdownMenuItem onClick={() => openWith(user)}>
+            Змінити пароль
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
     </div>
   );
 }
@@ -146,30 +174,6 @@ export const columns: ColumnDef<User>[] = [
     enableHiding: false,
     enableSorting: false,
     size: 64,
-    cell: ({ row }) => {
-      const user = row.original;
-      return (
-        <div className="flex justify-center">
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="ghost" className="h-8 w-8 p-0">
-                <span className="sr-only">Відкрити меню</span>
-                <MoreHorizontal />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              <DropdownMenuLabel>Дії</DropdownMenuLabel>
-              <DropdownMenuItem onClick={() => navigator.clipboard.writeText(user.id)}>
-                Скопіювати ID користувача
-              </DropdownMenuItem>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem onClick={() => { /* відкриття модалки зміни паролю */ }}>
-                Змінити пароль
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-        </div>
-      );
-    },
+    cell: ({ row }) => <ActionCell user={row.original} />,
   },
 ];

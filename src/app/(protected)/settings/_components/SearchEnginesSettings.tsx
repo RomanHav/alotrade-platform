@@ -5,7 +5,7 @@ export default function SearchEnginesSettings() {
   return (
     <div className="flex flex-col gap-6">
       <h2 className="text-2xl">Налаштування у пошукових системах</h2>
-      <div className="flex flex-col gap-2.5 bg-white p-2.5">
+      <div className="flex flex-col gap-2.5 bg-white dark:bg-neutral-800 p-2.5">
         <h3 className="text-xl text-[#0055FF] underline">Мета-заголовок</h3>
         <span className="text-sm text-[#B9B9B9]">https://alcotrade.com.ua/</span>
         <p className="text-base text-[#616161]">

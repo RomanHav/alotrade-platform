@@ -1,7 +1,7 @@
 'use client';
 
 import * as React from 'react';
-import useSWR from 'swr';
+import useSWR, { mutate } from 'swr';
 import {
   useReactTable,
   getCoreRowModel,
@@ -42,6 +42,7 @@ export function DataTable() {
   const [sorting, setSorting] = React.useState<SortingState>([]);
   const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>([]);
   const [rowSelection, setRowSelection] = React.useState({});
+  const [deleting, setDeleting] = React.useState(false);
 
   const table = useReactTable({
     data: rows,
@@ -57,7 +58,43 @@ export function DataTable() {
     initialState: { pagination: { pageSize: 6 } },
   });
 
-  const selectedCount = table.getSelectedRowModel().rows.length;
+  const selectedIds = table.getSelectedRowModel().rows.map((r) => r.original.id);
+  const selectedCount = selectedIds.length;
+
+  async function handleBulkDelete() {
+    if (selectedCount === 0 || deleting) return;
+
+    setDeleting(true);
+
+
+    const prev = data;
+    await mutate(
+      '/api/users',
+      (current: { ok: boolean; users: User[] } | undefined) =>
+        current
+          ? { ...current, users: current.users.filter((u) => !selectedIds.includes(u.id)) }
+          : current,
+      { revalidate: false }
+    );
+
+    try {
+      const res = await fetch('/api/users', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ids: selectedIds }),
+      });
+      const j = await res.json();
+      if (!res.ok || j?.ok === false) {
+        throw new Error(j?.error || 'Не вдалося видалити користувачів');
+      }
+      table.resetRowSelection();
+    } catch (e) {
+      console.error(e);
+      await mutate('/api/users', prev, false);
+    } finally {
+      setDeleting(false);
+    }
+  }
 
   if (isLoading) return <div className="p-4">Завантаження…</div>;
   if (error) return <div className="p-4 text-red-600">Помилка: {(error as Error).message}</div>;
@@ -76,11 +113,10 @@ export function DataTable() {
           <Button
             variant="destructive"
             className="ml-auto"
-            onClick={() => {
-             
-            }}
+            onClick={handleBulkDelete}
+            disabled={deleting}
           >
-            Видалити обране
+            {deleting ? 'Видалення…' : `Видалити обране (${selectedCount})`}
           </Button>
         )}
       </div>
@@ -133,10 +169,10 @@ export function DataTable() {
           Сторінка {table.getState().pagination.pageIndex + 1} з {table.getPageCount() || 1}
         </span>
         <div className="flex flex-1 items-center justify-end gap-3">
-          <Button onClick={() => table.previousPage()} disabled={!table.getCanPreviousPage()}>
+          <Button className='cursor-pointer' onClick={() => table.previousPage()} disabled={!table.getCanPreviousPage()}>
             Попередня
           </Button>
-        <Button onClick={() => table.nextPage()} disabled={!table.getCanNextPage()}>
+          <Button className='cursor-pointer' onClick={() => table.nextPage()} disabled={!table.getCanNextPage()}>
             Наступна
           </Button>
         </div>

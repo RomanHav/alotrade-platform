@@ -9,11 +9,15 @@ import type { Role } from '@prisma/client';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { navItems, type NavItem } from '@/config/nav';
 import { BoxesIcon } from 'lucide-react';
+import { useIsDark } from './uselsDark';
 
 type SidebarUser = { name: string | null; role: Role };
 
 export default function Sidebar({ user, fixed = false }: { user: SidebarUser; fixed?: boolean }) {
   const pathname = usePathname();
+  const { mounted, isDark } = useIsDark();
+
+  const logoSrc = mounted && isDark ? '/dark-logo.svg' : '/logo.svg';
 
   return (
     <aside
@@ -24,8 +28,8 @@ export default function Sidebar({ user, fixed = false }: { user: SidebarUser; fi
     >
       <div className="flex h-full flex-col">
         <div className="flex h-40 items-center justify-center border-b px-4">
-          <Link href="/dashboard" className="font-semibold">
-            <Image src="/logo.svg" alt="logo" width={214} height={106} />
+          <Link href="/dashboard" className="font-semibold" aria-label="Home">
+            <Image src={logoSrc} alt="logo" width={214} height={106} priority />
           </Link>
         </div>
 
@@ -52,7 +56,7 @@ export default function Sidebar({ user, fixed = false }: { user: SidebarUser; fi
 
               const parentActive =
                 item.href && (pathname === item.href || pathname.startsWith(item.href + '/'));
-              const childActive = item.children.some(
+              const childActive = item.children!.some(
                 (c) => pathname === c.href || pathname.startsWith(c.href + '/'),
               );
 
@@ -109,16 +113,9 @@ function NavWithChildren({
           {item.children!.map((c) => {
             const childActive = pathname === c.href || pathname.startsWith(c.href + '/');
             return (
-              <div key={''} className={'relative'}>
-                <Image
-                  className={'absolute -left-3'}
-                  src={'/arrow.svg'}
-                  alt={'arrow'}
-                  width={10}
-                  height={25}
-                />
+              <div key={c.href} className="relative">
+                <Image className="absolute -left-3" src="/arrow.svg" alt="arrow" width={10} height={25} />
                 <Link
-                  key={c.href}
                   href={c.href}
                   className={cn(
                     'hover:bg-accent hover:text-accent-foreground flex items-center gap-4 rounded-md px-2 py-1.5',
