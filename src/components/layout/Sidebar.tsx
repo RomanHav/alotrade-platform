@@ -11,7 +11,8 @@ import { navItems, type NavItem } from '@/config/nav';
 import { BoxesIcon } from 'lucide-react';
 import { useIsDark } from './uselsDark';
 
-type SidebarUser = { name: string | null; role: Role };
+
+type SidebarUser = { name: string | null; role: Role; image: string };
 
 export default function Sidebar({ user, fixed = false }: { user: SidebarUser; fixed?: boolean }) {
   const pathname = usePathname();

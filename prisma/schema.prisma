@@ -28,6 +28,8 @@ model User {
   image         String?
   theme         Theme     @default(DEFAULT)
 
+  avatarPublicId String?
+
   passwordHash String?
   role         Role    @default(MANAGER)
 

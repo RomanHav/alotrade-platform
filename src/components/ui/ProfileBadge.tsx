@@ -6,10 +6,12 @@ import Link from 'next/link';
 import type { Role } from '@prisma/client';
 import { logout } from '@/app/(protected)/actions';
 
+
 type ProfileBadgeProps = {
   user: {
     name: string | null;
     role: Role;
+    image: string;
   };
 };
 
@@ -23,7 +25,7 @@ export default function ProfileBadge({ user }: ProfileBadgeProps) {
     <div className="px-2">
       <div className="flex justify-between rounded-lg shadow-sm bg-neutral-50 dark:bg-neutral-900 p-2.5">
         <div className="flex items-center gap-4">
-          <Image src={'/avatar.jpg'} alt="Avatar" width={50} height={50} className="rounded-sm" />
+          <Image src={user.image} alt="Avatar" width={50} height={50} className="rounded-sm" />
           <div className="flex flex-col gap-0.5">
             <span className="text-xl font-light">{user.name ?? 'Guest'}</span>
             <span className="text-base font-thin">{roleLabel[user.role] ?? 'User'}</span>
