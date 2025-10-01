@@ -20,6 +20,16 @@ enum Theme {
   DEFAULT
 }
 
+model SiteSettings {
+ 
+  id                   Int       @id @default(1)
+  defaultSeoTitle      String?   @db.VarChar(60)
+  defaultSeoDescription String?  @db.VarChar(160)
+  titleSuffix          String?   @db.VarChar(30)
+  ogImageUrl           String?
+  updatedAt            DateTime  @updatedAt
+}
+
 model User {
   id            String    @id @default(cuid())
   name          String?
@@ -118,8 +128,8 @@ model Product {
 
   variants ProductVariant[]
 
-  seoTitle       String?
-  seoDescription String?
+  seoTitle       String? @db.VarChar(60)
+  seoDescription String? @db.VarChar(160)
 
   publishedAt DateTime?
   createdAt   DateTime  @default(now())
@@ -170,8 +180,8 @@ model Brand {
   description String?
   status      BrandStatus @default(DRAFT)
 
-  seoTitle       String?
-  seoDescription String?
+  seoTitle       String? @db.VarChar(60)
+  seoDescription String? @db.VarChar(160)
 
   coverId String?
   cover   MediaAsset? @relation(fields: [coverId], references: [id])

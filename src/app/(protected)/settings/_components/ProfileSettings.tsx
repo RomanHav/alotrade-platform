@@ -18,6 +18,9 @@ export default function ProfileSettings({
 }) {
   const lastObjectUrlRef = useRef<string | null>(null);
 
+ 
+  const canDelete = !!previewUrl && previewUrl !== defaultAvatar;
+
   async function handleSelect(file: File) {
     
     if (lastObjectUrlRef.current) {
@@ -26,7 +29,7 @@ export default function ProfileSettings({
     }
     const localUrl = URL.createObjectURL(file);
     lastObjectUrlRef.current = localUrl;
-    onSelect(file, localUrl); 
+    onSelect(file, localUrl);
   }
 
   useEffect(() => {
@@ -66,7 +69,14 @@ export default function ProfileSettings({
 
           <UploadPhotoButton onFileSelected={handleSelect}>Змінити</UploadPhotoButton>
 
-          <Button variant="destructive" size="sm" onClick={resetToDefault} className="cursor-pointer">
+          <Button
+            variant="destructive"
+            size="sm"
+            onClick={resetToDefault}
+            disabled={!canDelete}
+            className={`cursor-pointer ${canDelete ? 'opacity-100' : 'opacity-50'}`}
+            title={canDelete ? 'Повернути дефолтне фото' : 'Немає що видаляти'}
+          >
             Видалити
           </Button>
         </div>
