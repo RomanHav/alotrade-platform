@@ -1,3 +1,4 @@
+// app/api/profile/avatar/route.ts
 import { NextResponse, type NextRequest } from 'next/server';
 import { v2 as cloudinary } from 'cloudinary';
 import { auth } from '@/auth';
@@ -22,15 +23,16 @@ export async function PATCH(req: NextRequest) {
 
     const form = await req.formData();
     const file = form.get('file');
-    if (!(file instanceof Blob)) {
+
+    if (!(file instanceof File)) {
       return NextResponse.json({ ok: false, error: 'Файл не передано' }, { status: 400 });
     }
 
-    const mime = (file as any).type as string | undefined;
+    const mime: string = file.type;
     if (mime && !mime.startsWith('image/')) {
       return NextResponse.json({ ok: false, error: 'Потрібне зображення' }, { status: 400 });
     }
-    if (typeof file.size === 'number' && file.size > MAX_SIZE_BYTES) {
+    if (file.size > MAX_SIZE_BYTES) {
       return NextResponse.json({ ok: false, error: 'Файл завеликий (макс 5MB)' }, { status: 413 });
     }
 
@@ -56,7 +58,10 @@ export async function PATCH(req: NextRequest) {
           unique_filename: true,
         },
         (error, result) => {
-          if (error || !result) return reject(error ?? new Error('Upload failed'));
+          if (error || !result) {
+            reject(error ?? new Error('Upload failed'));
+            return;
+          }
           resolve({
             secure_url: result.secure_url!,
             public_id: result.public_id!,
@@ -74,6 +79,7 @@ export async function PATCH(req: NextRequest) {
         image: uploaded.secure_url,
         avatarPublicId: uploaded.public_id,
       },
+      select: { id: true },
     });
 
     if (current?.avatarPublicId && current.avatarPublicId !== uploaded.public_id) {
@@ -83,7 +89,7 @@ export async function PATCH(req: NextRequest) {
     }
 
     return NextResponse.json({ ok: true, url: uploaded.secure_url }, { status: 200 });
-  } catch (e: unknown) {
+  } catch (e) {
     const msg = e instanceof Error ? e.message : 'Помилка завантаження';
     return NextResponse.json({ ok: false, error: msg }, { status: 500 });
   }
@@ -118,7 +124,7 @@ export async function DELETE(req: NextRequest) {
     });
 
     return NextResponse.json({ ok: true, url: DEFAULT_AVATAR }, { status: 200 });
-  } catch (e: unknown) {
+  } catch (e) {
     const msg = e instanceof Error ? e.message : 'Помилка видалення';
     return NextResponse.json({ ok: false, error: msg }, { status: 500 });
   }
