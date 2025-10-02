@@ -1,7 +1,7 @@
 import { prisma } from '@/lib/prisma';
 import { NextResponse } from 'next/server';
 import { ProductStatus } from '@prisma/client';
-import { slug } from '@/lib/slug';
+import { slug as makeSlug } from '@/lib/slug';
 
 type VariantInput = {
   id?: string;
@@ -9,18 +9,17 @@ type VariantInput = {
   volumeMl?: number | null;
   position: number;
 };
-
 type SaveInput = {
   id?: string;
   name: string;
-  status: ProductStatus;
+  status: ProductStatus; // 'ACTIVE' | 'DRAFT' | 'ARCHIVE'
   brandId: string;
   description?: string | null;
   seoTitle?: string | null;
   seoDescription?: string | null;
   variants?: VariantInput[];
-  coverId?: string | null;
-  imageIds?: string[];
+  coverId?: string | null; // MediaAsset.id
+  imageIds?: string[]; // масив MediaAsset.id (у потрібному порядку)
 };
 
 export async function POST(req: Request) {
@@ -30,8 +29,21 @@ export async function POST(req: Request) {
     const { id, variants = [], imageIds = [], ...rest } = data;
 
     await prisma.$transaction(async (tx) => {
-      await tx.product.update({ where: { id }, data: rest });
+      // 1) тільки наявні media
+      const existing = await tx.mediaAsset.findMany({
+        where: { id: { in: imageIds } },
+        select: { id: true },
+      });
+      const valid = existing.map((m) => m.id);
 
+      // 2) безпечний coverId
+      let safeCoverId: string | null = rest.coverId ?? null;
+      if (!safeCoverId || !valid.includes(safeCoverId)) safeCoverId = valid[0] ?? null;
+
+      // 3) оновлюємо продукт (+ coverId)
+      await tx.product.update({ where: { id }, data: { ...rest, coverId: safeCoverId } });
+
+      // 4) варіанти
       await tx.productVariant.deleteMany({ where: { productId: id } });
       if (variants.length) {
         await tx.productVariant.createMany({
@@ -44,10 +56,11 @@ export async function POST(req: Request) {
         });
       }
 
+      // 5) галерея
       await tx.productImage.deleteMany({ where: { productId: id } });
-      if (imageIds.length) {
+      if (valid.length) {
         await tx.productImage.createMany({
-          data: imageIds.map((mediaId, i) => ({ productId: id, mediaId, position: i })),
+          data: valid.map((mediaId, i) => ({ productId: id, mediaId, position: i })),
         });
       }
     });
@@ -55,8 +68,16 @@ export async function POST(req: Request) {
     const { variants = [], imageIds = [], ...rest } = data;
 
     await prisma.$transaction(async (tx) => {
+      const existing = await tx.mediaAsset.findMany({
+        where: { id: { in: imageIds } },
+        select: { id: true },
+      });
+      const valid = existing.map((m) => m.id);
+      let safeCoverId: string | null = rest.coverId ?? null;
+      if (!safeCoverId || !valid.includes(safeCoverId)) safeCoverId = valid[0] ?? null;
+
       const created = await tx.product.create({
-        data: { ...rest, slug: await slug(data.name) },
+        data: { ...rest, slug: makeSlug(data.name), coverId: safeCoverId },
       });
 
       if (variants.length) {
@@ -70,9 +91,9 @@ export async function POST(req: Request) {
         });
       }
 
-      if (imageIds.length) {
+      if (valid.length) {
         await tx.productImage.createMany({
-          data: imageIds.map((mediaId, i) => ({ productId: created.id, mediaId, position: i })),
+          data: valid.map((mediaId, i) => ({ productId: created.id, mediaId, position: i })),
         });
       }
     });

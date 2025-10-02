@@ -14,18 +14,17 @@ export default async function EditBrandPage({ params }: { params: Promise<{ id: 
   });
   if (!brand) notFound();
 
-  return (
-    <BrandForm
-      brand={{
-        id: brand.id,
-        name: brand.name,
-        status: brand.status,
-        description: brand.description ?? undefined,
-        seoTitle: brand.seoTitle ?? undefined,
-        seoDescription: brand.seoDescription ?? undefined,
-        coverId: brand.coverId ?? undefined,
-      }}
-      products={brand.products}
-    />
-  );
+  const serverBrand = {
+    id: brand.id,
+    name: brand.name,
+    status: brand.status as 'ACTIVE' | 'DRAFT' | 'ARCHIVE',
+    description: brand.description ?? '',
+    seoTitle: brand.seoTitle ?? null,
+    seoDescription: brand.seoDescription ?? null,
+    coverId: brand.coverId ?? null,
+    coverUrl: brand.cover?.url ?? null, // для мгновенного превью
+    // coverPublicId: мы не знаем для существующих (если не храните), можно оставить null
+  };
+
+  return <BrandForm serverBrand={serverBrand} products={brand.products} />;
 }
