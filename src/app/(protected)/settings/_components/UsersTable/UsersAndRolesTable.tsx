@@ -12,7 +12,7 @@ const UserAndRolesTable: React.FC = () => {
   return (
     <>
       <div className="relative h-full w-full">
-        <div className="flex items-center justify-between">
+        <div className="flex items-center justify-between mt-5">
           <h2 className="text-2xl">Користувачі та ролі</h2>
           <Button onClick={open} className="cursor-pointer">
             Додати

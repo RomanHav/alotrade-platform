@@ -1,34 +1,39 @@
 'use client';
 
-import { useRef, useState, useEffect } from 'react';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
+import { useEffect, useRef, useState } from 'react';
 import { Plus } from 'lucide-react';
 import Image from 'next/image';
 import { cn } from '@/lib/utils';
+import { Label } from '@/components/ui/label';
 
 type Props = {
   className?: string;
-  accept?: string;              
-  maxSizeMb?: number;          
+  accept?: string;                 
+  maxSizeMb?: number;              
+  initialImageUrl?: string | null; 
+  valueDescription?: string;      
+  onChangeDescription?: (v: string) => void;
   onSelect?: (file: File, previewUrl: string) => void; 
+  onClear?: () => void;                                 
 };
 
-export default function SearchEnginesSettings({
+export default function SeoPhotoButton({
   className,
   accept = 'image/*',
   maxSizeMb = 10,
+  initialImageUrl = null,
   onSelect,
+  onClear,
 }: Props) {
   const inputRef = useRef<HTMLInputElement | null>(null);
+
+  
+
+ 
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [fileName, setFileName] = useState<string>('');
-  const lastObjectUrlRef = useRef<string | null>(null);
   const [error, setError] = useState<string | null>(null);
-
-  const [metaTitle, setMetaTitle] = useState('');
-  const [metaDescription, setMetaDescription] = useState('');
+  const lastObjectUrlRef = useRef<string | null>(null);
 
   const openPicker = () => inputRef.current?.click();
 
@@ -50,7 +55,6 @@ export default function SearchEnginesSettings({
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setError(null);
     const f = e.target.files?.[0];
-
    
     e.currentTarget.value = '';
     if (!f) return;
@@ -67,6 +71,7 @@ export default function SearchEnginesSettings({
 
     setPreviewUrl(url);
     setFileName(f.name);
+
     onSelect?.(f, url);
   };
 
@@ -75,63 +80,36 @@ export default function SearchEnginesSettings({
     setPreviewUrl(null);
     setFileName('');
     setError(null);
+    onClear?.();
   };
 
- 
   const uploadBoxBase =
     'relative flex w-[325px] h-[158px] flex-col items-center gap-4 rounded-md border border-dashed bg-transparent px-16 py-6 shadow-sm focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-neutral-400 dark:focus:ring-neutral-700';
   const uploadBoxHover = 'hover:bg-neutral-50 dark:hover:bg-neutral-800/60';
 
+  
+  const shownImage = previewUrl ?? initialImageUrl ?? null;
+
   return (
-    <div className="flex flex-col gap-6">
-      <h2 className="text-2xl">Налаштування у пошукових системах</h2>
+    <div className={cn('flex flex-col gap-4', className)}>
+      
 
-      <div className="flex flex-col gap-2.5 bg-white p-2.5 dark:bg-neutral-800">
-        <h3 className="text-xl text-[#0055FF] underline">Мета-заголовок</h3>
-        <span className="text-sm text-[#B9B9B9]">https://alcotrade.com.ua/</span>
-        <p className="text-base text-[#616161]">
-          Lorem ipsum dolor sit amet, consectetur adipiscing elit. Pellentesque enim ante, rutrum
-          vel augue sit amet, pellentesque ultrices metus. Morbi quis condimentum purus. Etiam non
-          lectus ante. Curabitur tincidunt ipsum nulla, ut consectetur metus cursus sed. Donec
-          elementum a ipsum.
-        </p>
-      </div>
-
+     
       <div className="flex flex-col gap-4">
-        <Label htmlFor="meta-title" className="text-xl">
-          Змінити мета-заголовок
+        <Label htmlFor="meta-image" className="text-xl">
+          Змінити мета-зображення
         </Label>
-        <Input
-          id="meta-title"
-          value={metaTitle}
-          onChange={(e) => setMetaTitle(e.target.value)} 
-          type="text"
-          placeholder="Заголовок сайту у пошукових системах"
-          className="w-full"
+
+        <input
+          id="meta-image"
+          ref={inputRef}
+          type="file"
+          accept={accept}
+          className="hidden"
+          onChange={handleChange}
         />
-      </div>
 
-      <div className="flex flex-col gap-4">
-        <Label htmlFor="meta-description" className="text-xl">
-          Змінити мета-опис
-        </Label>
-        <Textarea
-          id="meta-description"
-          value={metaDescription}
-          onChange={(e) => setMetaDescription(e.target.value)}
-          placeholder="Опис сайту у пошукових системах"
-          className="h-20 w-full resize-none"
-        />
-      </div>
-
-      <div className={cn('flex flex-col gap-4', className)}>
-        <Label htmlFor='meta-image' className="text-xl">Змінити мета-зображення</Label>
-
-       
-        <input id='meta-image' ref={inputRef} type="file" accept={accept} className="hidden" onChange={handleChange} />
-
-       
-        {!previewUrl && (
+        {!shownImage ? (
           <button
             type="button"
             onClick={openPicker}
@@ -142,15 +120,11 @@ export default function SearchEnginesSettings({
             <Plus className="inline h-16 w-16 stroke-neutral-300 stroke-1" />
             <span className="text-lg text-neutral-400">Завантажити файл</span>
           </button>
-        )}
-
-       
-        {previewUrl && (
+        ) : (
           <div className="flex items-center gap-6">
-          
-            <div className={cn(uploadBoxBase, 'overflow-hidden border-solid cursor-default')}>
+            <div className={cn(uploadBoxBase, 'cursor-default overflow-hidden border-solid')}>
               <Image
-                src={previewUrl}
+                src={shownImage}
                 alt="Meta image preview"
                 fill
                 sizes="325px"
@@ -159,10 +133,9 @@ export default function SearchEnginesSettings({
               />
             </div>
 
-      
             <div className="flex min-w-0 flex-col gap-2">
               <span className="truncate text-sm text-neutral-700 dark:text-neutral-200">
-                {fileName}
+                {fileName || (initialImageUrl ? initialImageUrl.split('/').pop() ?? '' : '')}
               </span>
 
               <div className="flex items-center gap-3">

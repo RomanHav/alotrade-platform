@@ -15,7 +15,20 @@ export default async function SettingsPage() {
   });
   if (!userRole) redirect('/sign-in');
 
-  const role: UserRole = { role: userRole.role };
+  const seoSettings = await prisma.siteSettings.findFirst({
+    select: {
+      defaultSeoTitle: true,
+      defaultSeoDescription: true,
+      titleSuffix: true,
+    },
+  });
 
-  return <SettingsMain role={role} />;
+  const role: UserRole = { role: userRole.role };
+  const settings = {
+    defaultSeoTitle: seoSettings?.defaultSeoTitle,
+    defaultSeoDescription: seoSettings?.defaultSeoDescription,
+    titleSuffix: seoSettings?.titleSuffix,
+  };
+
+  return <SettingsMain role={role} seoSettings={settings} />;
 }
