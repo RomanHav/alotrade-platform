@@ -1,143 +1,43 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { Button } from '@/components/ui/button';
-import ThemeSettings from './ThemeSettings';
-import ProfileSettings from './ProfileSettings';
-import SearchEnginesSettings from './SearchEnginesSettings';
+
+import ThemeSettings from './settings-sections/ThemeSettings';
+import ProfileSettings from './settings-sections/ProfileSettings';
+import SearchEnginesSettings from './settings-sections/SearchEnginesSettings';
 import UserAndRolesTable from './UsersTable/UsersAndRolesTable';
 import { AddUserModalProvider } from './UsersTable/context';
 
-type ThemeMode = 'light' | 'dark' | 'system';
+import { useThemeSettings } from './hooks/useThemeSettings';
+import { useAvatarSettings } from './hooks/useAvatarSettings';
+import { useSeoSettings } from './hooks/useSeoSettings';
 
-type role = { role: string };
+type RoleProp = { role: string };
+type SettingsProp = {
+  defaultSeoTitle?: string | null;
+  defaultSeoDescription?: string | null;
+  titleSuffix?: string | null;
+};
 
-function applyTheme(mode: ThemeMode, persist: boolean) {
-  const html = document.documentElement;
-  const setDark = (v: boolean) => html.classList.toggle('dark', v);
-
-  if (mode === 'light') {
-    setDark(false);
-    if (persist) localStorage.setItem('theme', 'light');
-  } else if (mode === 'dark') {
-    setDark(true);
-    if (persist) localStorage.setItem('theme', 'dark');
-  } else {
-    const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-    setDark(prefersDark);
-    if (persist) localStorage.removeItem('theme');
-  }
-
-  window.dispatchEvent(new CustomEvent('themechange', { detail: { mode } }));
-}
-
-function readInitialTheme(): ThemeMode {
-  const saved = (typeof window !== 'undefined' ? localStorage.getItem('theme') : null) as
-    | 'light'
-    | 'dark'
-    | null;
-  return saved === 'light' || saved === 'dark' ? saved : 'system';
-}
-
-type AvatarDraft = { file: File | null; reset: boolean };
-
-async function uploadAvatar(file: File): Promise<string> {
-  const fd = new FormData();
-  fd.append('file', file);
-  const res = await fetch('/api/profile/avatar', { method: 'PATCH', body: fd });
-  if (!res.ok) throw new Error('Помилка завантаження фото');
-  const data = (await res.json()) as { url: string };
-  return data.url;
-}
-
-async function deleteAvatar(): Promise<string> {
-  const res = await fetch('/api/profile/avatar', { method: 'DELETE' });
-  if (!res.ok) throw new Error('Помилка видалення фото');
-  const data = (await res.json()) as { url: string };
-  return data.url;
-}
-
-export default function SettingsMain({ role }: { role: role }) {
+export default function SettingsMain({ role, seoSettings }: { role: RoleProp; seoSettings: SettingsProp }) {
   const defaultAvatar = process.env.NEXT_PUBLIC_DEFAULT_USER_IMAGE ?? '/avatar.jpg';
 
-  const [mounted, setMounted] = useState(false);
-  const [initialTheme, setInitialTheme] = useState<ThemeMode>('system');
-  const [draftTheme, setDraftTheme] = useState<ThemeMode>('system');
-
-  const [avatarInitialUrl, setAvatarInitialUrl] = useState<string>(defaultAvatar);
-  const [avatarPreviewUrl, setAvatarPreviewUrl] = useState<string>(defaultAvatar);
-  const [avatarDraft, setAvatarDraft] = useState<AvatarDraft>({ file: null, reset: false });
+  const theme = useThemeSettings();
+  const avatar = useAvatarSettings(defaultAvatar);
+  const seo = useSeoSettings();
 
   const [saving, setSaving] = useState(false);
-
-  useEffect(() => {
-    setMounted(true);
-
-    const initTheme = readInitialTheme();
-    setInitialTheme(initTheme);
-    setDraftTheme(initTheme);
-    applyTheme(initTheme, false);
-
-    (async () => {
-      try {
-        const r = await fetch('/api/profile', { cache: 'no-store' });
-        if (r.ok) {
-          const data = (await r.json()) as { imageUrl?: string };
-          const url = data.imageUrl || defaultAvatar;
-          setAvatarInitialUrl(url);
-          setAvatarPreviewUrl(url);
-        } else {
-          setAvatarInitialUrl(defaultAvatar);
-          setAvatarPreviewUrl(defaultAvatar);
-        }
-      } catch {
-        setAvatarInitialUrl(defaultAvatar);
-        setAvatarPreviewUrl(defaultAvatar);
-      }
-    })();
-  }, [defaultAvatar]);
-
-  const themeDirty = mounted && draftTheme !== initialTheme;
-  const avatarDirty = mounted && (avatarDraft.file !== null || avatarDraft.reset);
-  const dirty = themeDirty || avatarDirty;
-
-  const handleThemeChange = (m: ThemeMode) => {
-    setDraftTheme(m);
-
-    applyTheme(m, false);
-  };
-
-  const handleAvatarSelect = (file: File, localObjectUrl: string) => {
-    setAvatarPreviewUrl(localObjectUrl);
-    setAvatarDraft({ file, reset: false });
-  };
-
-  const handleAvatarReset = () => {
-    setAvatarPreviewUrl(defaultAvatar);
-    setAvatarDraft({ file: null, reset: true });
-  };
+  const dirty = theme.dirty || avatar.dirty || seo.dirty;
+  const formValid = seo.valid;
 
   const onSave = async () => {
+    setSaving(true);
     try {
-      setSaving(true);
-
-      if (themeDirty) {
-        applyTheme(draftTheme, true);
-        setInitialTheme(draftTheme);
-      }
-
-      if (avatarDirty) {
-        let newUrl = avatarPreviewUrl;
-        if (avatarDraft.reset) {
-          newUrl = await deleteAvatar();
-        } else if (avatarDraft.file) {
-          newUrl = await uploadAvatar(avatarDraft.file);
-        }
-
-        setAvatarInitialUrl(newUrl);
-        setAvatarPreviewUrl(newUrl);
-        setAvatarDraft({ file: null, reset: false });
-      }
+      await theme.save();
+      await avatar.save();
+      await seo.save();
+      seo.resetTextOnly();
     } finally {
       setSaving(false);
     }
@@ -150,24 +50,35 @@ export default function SettingsMain({ role }: { role: role }) {
           <h1 className="text-4xl">Налаштування</h1>
           <Button
             onClick={onSave}
-            disabled={!dirty || saving}
-            className={dirty ? 'opacity-100' : 'opacity-50'}
+            disabled={!dirty || saving || !formValid}
+            className={`${dirty && formValid ? 'opacity-100' : 'opacity-50'} cursor-pointer`}
           >
             {saving ? 'Збереження…' : 'Зберегти'}
           </Button>
         </div>
 
         <div className="flex flex-col gap-8 rounded-2xl border border-neutral-200 bg-neutral-50 p-5 shadow-sm dark:border-neutral-800 dark:bg-neutral-900">
-          <ThemeSettings value={draftTheme} onChange={handleThemeChange} />
+          <ThemeSettings value={theme.draft} onChange={theme.setDraft} />
 
           <ProfileSettings
-            previewUrl={avatarPreviewUrl}
-            onSelect={handleAvatarSelect}
-            onReset={handleAvatarReset}
+            previewUrl={avatar.previewUrl}
+            onSelect={avatar.onSelect}
+            onReset={avatar.onReset}
             defaultAvatar={defaultAvatar}
           />
 
-          <SearchEnginesSettings />
+          <SearchEnginesSettings
+            seoSettings={seoSettings}
+            className=""
+            valueTitle={seo.draft.title}
+            onChangeTitle={seo.setTitle}
+            valueDescription={seo.draft.description}
+            onChangeDescription={seo.setDescription}
+            initialImageUrl={seo.current.imageUrl}
+            onSelect={(file) => seo.selectImage(file)}
+            onClear={() => seo.clearImage()}
+          />
+
           {role.role === 'ADMIN' && <UserAndRolesTable />}
         </div>
       </div>

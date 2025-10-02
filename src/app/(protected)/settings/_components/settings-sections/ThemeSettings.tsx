@@ -16,9 +16,9 @@ export default function ThemeSettings({
       <h2 className="text-2xl">Тема застосунку</h2>
       <Tabs value={value} onValueChange={(v) => onChange(v as ThemeMode)} className="w-xl">
         <TabsList className="grid w-full grid-cols-3">
-          <TabsTrigger value="light">Світла</TabsTrigger>
-          <TabsTrigger value="dark">Темна</TabsTrigger>
-          <TabsTrigger value="system">За замовчуванням</TabsTrigger>
+          <TabsTrigger className='cursor-pointer' value="light">Світла</TabsTrigger>
+          <TabsTrigger className='cursor-pointer' value="dark">Темна</TabsTrigger>
+          <TabsTrigger className='cursor-pointer' value="system">За замовчуванням</TabsTrigger>
         </TabsList>
       </Tabs>
     </div>
