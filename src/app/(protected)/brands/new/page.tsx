@@ -1,6 +1,5 @@
 import { prisma } from '@/lib/prisma';
 import BrandForm from '../_components/BrandForm';
-import { BrandStatus } from '@prisma/client';
 
 export default async function NewBrandPage() {
   const products = await prisma.product.findMany({
@@ -8,5 +7,15 @@ export default async function NewBrandPage() {
     orderBy: { name: 'asc' },
   });
 
-  return <BrandForm products={products} brand={{ status: 'DRAFT' as BrandStatus }} />;
+  // Можно не передавать вовсе — форма возьмёт initialState из Redux
+  const serverBrand = {
+    status: 'DRAFT' as const,
+    description: '',
+    seoTitle: null,
+    seoDescription: null,
+    coverId: null,
+    coverUrl: null,
+  };
+
+  return <BrandForm products={products} serverBrand={serverBrand} />;
 }

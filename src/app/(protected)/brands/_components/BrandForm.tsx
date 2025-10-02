@@ -1,8 +1,8 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import { z } from 'zod';
-import { BrandStatus } from '@prisma/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -15,45 +15,56 @@ import {
 } from '@/components/ui/select';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { useAppDispatch, useAppSelector } from '@/store/hooks';
+import { hydrateFromServer, setField } from '@/store/slices/brandFormSlice';
+import BrandMediaPicker from './BrandMediaPicker';
+import type { BrandFormState } from '@/store/slices/brandFormSlice';
+import type { BrandStatus } from '@prisma/client';
 
 const schema = z.object({
   id: z.string().optional(),
   name: z.string().min(2),
   status: z.enum(['ACTIVE', 'DRAFT', 'ARCHIVE']),
   description: z.string().optional(),
-  seoTitle: z.string().optional(),
-  seoDescription: z.string().optional(),
-  coverId: z.string().optional(),
+  seoTitle: z.string().max(60).nullable().optional(),
+  seoDescription: z.string().max(160).nullable().optional(),
+  coverId: z.string().nullable().optional(),
 });
 
-type BrandFormData = z.infer<typeof schema>;
 type ProductLite = { id: string; name: string; status: 'ACTIVE' | 'DRAFT' | 'ARCHIVE' };
 
 export default function BrandForm({
-  brand,
+  serverBrand,
   products,
 }: {
-  brand?: Partial<BrandFormData>;
+  serverBrand?: Partial<BrandFormState>;
   products: ProductLite[];
 }) {
-  const [data, setData] = useState<BrandFormData>({
-    id: brand?.id,
-    name: brand?.name ?? '',
-    status: (brand?.status as BrandFormData['status']) ?? 'DRAFT',
-    description: brand?.description ?? '',
-    seoTitle: brand?.seoTitle ?? '',
-    seoDescription: brand?.seoDescription ?? '',
-    coverId: brand?.coverId,
-  });
+  const router = useRouter();
+  const dispatch = useAppDispatch();
+  const data = useAppSelector((s) => s.brandForm);
+
+  useEffect(() => {
+    dispatch(hydrateFromServer(serverBrand ?? {}));
+  }, [dispatch, serverBrand?.id]);
 
   const save = async () => {
-    const payload = schema.parse(data);
+    const parsed = schema.parse({
+      id: data.id,
+      name: data.name ?? '',
+      status: data.status,
+      description: data.description ?? '',
+      seoTitle: data.seoTitle ?? null,
+      seoDescription: data.seoDescription ?? null,
+      coverId: data.coverId ?? null,
+    });
+
     const res = await fetch('/api/brands/save', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload),
+      body: JSON.stringify(parsed),
     });
-    if (res.ok) window.location.href = '/brands';
+    if (res.ok) router.push('/brands');
   };
 
   return (
@@ -62,7 +73,7 @@ export default function BrandForm({
         <h1 className="text-2xl font-semibold">{data.id ? 'Редагувати бренд' : 'Новий бренд'}</h1>
         <div className="flex gap-2">
           {data.id && (
-            <Button variant="outline" onClick={() => history.back()}>
+            <Button variant="outline" onClick={() => router.back()}>
               Відмінити
             </Button>
           )}
@@ -70,14 +81,16 @@ export default function BrandForm({
         </div>
       </div>
 
-      <div className="grid gap-6 lg:grid-cols-[1fr_320px]">
+      <div className="grid gap-6 lg:grid-cols-[1fr_420px]">
         <Card className="space-y-4 p-4">
           <div className="grid gap-3 md:grid-cols-2">
             <div>
               <label className="mb-1 block text-sm">Статус</label>
               <Select
                 value={data.status}
-                onValueChange={(v: BrandStatus) => setData({ ...data, status: v })}
+                onValueChange={(v: BrandFormState['status']) =>
+                  dispatch(setField({ key: 'status', value: v }))
+                }
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Оберіть статус" />
@@ -93,26 +106,25 @@ export default function BrandForm({
 
           <div>
             <label className="mb-1 block text-sm">Заголовок</label>
-            <Input value={data.name} onChange={(e) => setData({ ...data, name: e.target.value })} />
+            <Input
+              value={data.name ?? ''}
+              onChange={(e) => dispatch(setField({ key: 'name', value: e.target.value }))}
+            />
           </div>
 
           <div>
             <label className="mb-1 block text-sm">Опис бренду</label>
             <Textarea
               rows={6}
-              value={data.description}
-              onChange={(e) => setData({ ...data, description: e.target.value })}
+              value={data.description ?? ''}
+              onChange={(e) => dispatch(setField({ key: 'description', value: e.target.value }))}
             />
           </div>
 
           <div>
             <div className="mb-2 flex items-center justify-between">
               <div className="text-sm font-medium">Продукти</div>
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={() => (window.location.href = '/products/new')}
-              >
+              <Button size="sm" variant="outline" onClick={() => router.push('/products/new')}>
                 Додати продукт
               </Button>
             </div>
@@ -142,23 +154,19 @@ export default function BrandForm({
             <div className="text-sm font-medium">Налаштування в пошукових системах</div>
             <Input
               placeholder="Мета-заголовок"
-              value={data.seoTitle}
-              onChange={(e) => setData({ ...data, seoTitle: e.target.value })}
+              value={data.seoTitle ?? ''}
+              onChange={(e) => dispatch(setField({ key: 'seoTitle', value: e.target.value }))}
             />
             <Textarea
               placeholder="Мета-опис"
-              value={data.seoDescription}
-              onChange={(e) => setData({ ...data, seoDescription: e.target.value })}
+              value={data.seoDescription ?? ''}
+              onChange={(e) => dispatch(setField({ key: 'seoDescription', value: e.target.value }))}
             />
           </div>
         </Card>
 
-        <Card className="space-y-3 p-4">
-          <div className="text-sm font-medium">Медіафайли</div>
-          <div className="bg-muted aspect-[4/5] rounded-xl border" />
-          <Badge variant="secondary" className="mt-2">
-            + додати
-          </Badge>
+        <Card className="space-y-2 p-4">
+          <BrandMediaPicker />
         </Card>
       </div>
     </div>

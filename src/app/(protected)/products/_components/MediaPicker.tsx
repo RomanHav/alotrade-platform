@@ -1,6 +1,6 @@
 'use client';
 
-import { useRef, useState, useMemo } from 'react';
+import { useMemo, useRef, useState } from 'react';
 import Image from 'next/image';
 import { Button } from '@/components/ui/button';
 import { Trash2, Star, GripVertical } from 'lucide-react';
@@ -12,35 +12,15 @@ import {
   useSensors,
   DragEndEvent,
 } from '@dnd-kit/core';
-import {
-  SortableContext,
-  useSortable,
-  arrayMove,
-  verticalListSortingStrategy,
-} from '@dnd-kit/sortable';
+import { SortableContext, useSortable, verticalListSortingStrategy } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
+import { useAppDispatch, useAppSelector } from '@/store/hooks';
+import { addImages, removeImage, reorderImages, setCover } from '@/store/slices/productFormSlice';
 
-export type MediaItem = {
-  id: string;
-  url: string;
-  alt?: string | null;
-  publicId?: string;
-};
+export default function MediaPicker() {
+  const dispatch = useAppDispatch();
+  const { images, coverId, coverFallbackUrl } = useAppSelector((s) => s.productForm);
 
-type Props = {
-  value: MediaItem[];
-  coverId?: string | null;
-
-  imagesChangeAction: (items: MediaItem[]) => void;
-  coverChangeAction: (id: string | null) => void;
-};
-
-export default function MediaPicker({
-  value,
-  coverId,
-  imagesChangeAction,
-  coverChangeAction,
-}: Props) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [busy, setBusy] = useState(false);
 
@@ -48,66 +28,58 @@ export default function MediaPicker({
 
   const pick = () => inputRef.current?.click();
 
-
-  const coverUrl = useMemo(
-    () => (coverId ? (value.find((m) => m.id === coverId)?.url ?? null) : null),
-    [value, coverId],
-  );
-
+  const coverUrl = useMemo(() => {
+    if (coverId) {
+      const found = images.find((m) => m.id === coverId)?.url;
+      if (found) return found;
+    }
+    if (coverFallbackUrl) return coverFallbackUrl;
+    return images[0]?.url ?? null;
+  }, [images, coverId, coverFallbackUrl]);
 
   const upload = async (files: FileList | null) => {
     if (!files?.length) return;
     setBusy(true);
     try {
-      const added: MediaItem[] = [];
+      const added: { id: string; url: string; alt?: string | null; publicId?: string | null }[] =
+        [];
       for (const file of Array.from(files)) {
         const fd = new FormData();
         fd.append('file', file);
-
         const res = await fetch('/api/upload', { method: 'POST', body: fd });
         const json = await res.json();
-
         if (json?.ok && json?.media?.id && json?.media?.url) {
           added.push({
             id: json.media.id,
             url: json.media.url,
             alt: json.media.alt ?? null,
-            publicId: json.cloudinary?.publicId,
+            publicId: json.cloudinary?.publicId ?? null,
           });
         }
       }
-      if (!added.length) return;
-
-      const next = [...value, ...added];
-      imagesChangeAction(next);
-
-      if (!coverId && added[0]) coverChangeAction(added[0].id);
+      if (added.length) {
+        dispatch(addImages(added));
+      }
     } finally {
       setBusy(false);
       if (inputRef.current) inputRef.current.value = '';
     }
   };
 
-  const remove = async (m: MediaItem) => {
+  const onRemove = async (id: string, publicId?: string | null) => {
     const qs = new URLSearchParams();
-    if (m.publicId) qs.set('public_id', m.publicId);
-    qs.set('mediaId', m.id);
-
+    if (publicId) qs.set('public_id', publicId);
+    qs.set('mediaId', id);
     try {
       await fetch(`/api/upload?${qs.toString()}`, { method: 'DELETE' });
     } catch {}
-
-    const next = value.filter((x) => x.id !== m.id);
-    imagesChangeAction(next);
-    if (coverId === m.id) coverChangeAction(next[0]?.id ?? null);
+    dispatch(removeImage(id));
   };
 
   const onDragEnd = (e: DragEndEvent) => {
     const { active, over } = e;
     if (!over || active.id === over.id) return;
-    const oldIndex = value.findIndex((i) => i.id === active.id);
-    const newIndex = value.findIndex((i) => i.id === over.id);
-    imagesChangeAction(arrayMove(value, oldIndex, newIndex));
+    dispatch(reorderImages({ activeId: String(active.id), overId: String(over.id) }));
   };
 
   return (
@@ -127,7 +99,6 @@ export default function MediaPicker({
         </Button>
       </div>
 
-      {/* Обложка — рендерим только при валидном URL */}
       <div className="bg-muted aspect-[4/5] overflow-hidden rounded-xl border">
         {coverUrl ? (
           <Image
@@ -145,18 +116,19 @@ export default function MediaPicker({
         )}
       </div>
 
-      {/* Миниатюры (Sortable) */}
       <div className="mt-3">
         <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={onDragEnd}>
-          <SortableContext items={value.map((i) => i.id)} strategy={verticalListSortingStrategy}>
+          <SortableContext items={images.map((i) => i.id)} strategy={verticalListSortingStrategy}>
             <ul className="grid grid-cols-1 gap-2">
-              {value.map((m) => (
-                <SortableThumb
+              {images.map((m) => (
+                <Thumb
                   key={m.id}
-                  item={m}
+                  id={m.id}
+                  url={m.url}
+                  alt={m.alt ?? ''}
                   isCover={coverId === m.id}
-                  onMakeCover={() => coverChangeAction(m.id)}
-                  onRemove={() => remove(m)}
+                  onMakeCover={() => dispatch(setCover(m.id))}
+                  onRemove={() => onRemove(m.id, m.publicId)}
                 />
               ))}
             </ul>
@@ -167,19 +139,23 @@ export default function MediaPicker({
   );
 }
 
-function SortableThumb({
-  item,
+function Thumb({
+  id,
+  url,
+  alt,
   isCover,
   onMakeCover,
   onRemove,
 }: {
-  item: MediaItem;
+  id: string;
+  url: string;
+  alt: string;
   isCover: boolean;
   onMakeCover: () => void;
   onRemove: () => void;
 }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
-    id: item.id,
+    id,
   });
   const style = {
     transform: CSS.Transform.toString(transform),
@@ -205,10 +181,10 @@ function SortableThumb({
         </button>
 
         <div className="relative h-16 w-16 overflow-hidden rounded-md border">
-          {item.url ? (
+          {url ? (
             <Image
-              src={item.url}
-              alt={item.alt ?? ''}
+              src={url}
+              alt={alt}
               width={64}
               height={64}
               className="h-full w-full object-cover"
