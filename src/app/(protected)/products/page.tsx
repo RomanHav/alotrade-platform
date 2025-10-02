@@ -22,12 +22,7 @@ const isSort = (
 
 type SP = Record<string, string | string[] | undefined>;
 
-export default async function ProductsPage({
-  searchParams,
-}: {
-  // 🔧 Next 15: searchParams — Promise
-  searchParams: Promise<SP>;
-}) {
+export default async function ProductsPage({ searchParams }: { searchParams: Promise<SP> }) {
   const session = await auth();
   if (!session?.user?.id) redirect('/sign-in?callbackUrl=/products');
 

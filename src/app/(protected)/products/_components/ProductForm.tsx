@@ -1,8 +1,9 @@
+// app/(protected)/products/_components/ProductForm.tsx
 'use client';
 
 import { z } from 'zod';
 import { useRouter } from 'next/navigation';
-import { useState } from 'react';
+import { useEffect, useState } from 'react'; // 👈 добавили useEffect
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -14,37 +15,28 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Card } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { ProductStatus } from '@prisma/client';
+import MediaPicker, { type MediaItem } from './MediaPicker';
 
 const schema = z.object({
   id: z.string().optional(),
   name: z.string().min(2),
-  status: z.enum(['ACTIVE', 'DRAFT', 'ARCHIVED']),
+  status: z.enum(['ACTIVE', 'DRAFT', 'ARCHIVE']),
   brandId: z.string(),
   description: z.string().optional(),
   seoTitle: z.string().optional(),
   seoDescription: z.string().optional(),
+  coverId: z.string().nullable().optional(),
   variants: z.array(
     z.object({
       id: z.string().optional(),
       label: z.string().optional(),
       volumeMl: z.coerce.number().int().positive().optional(),
-      sku: z.string().optional(),
-      priceCents: z.coerce.number().int().nonnegative().optional(),
       position: z.number().int(),
     }),
   ),
 });
 
-type VariantForm = {
-  id?: string;
-  label?: string;
-  volumeMl?: number;
-  sku?: string;
-  priceCents?: number;
-  position: number;
-};
+type VariantForm = { id?: string; label?: string; volumeMl?: number; position: number };
 
 type ProductFormData = {
   id?: string;
@@ -55,6 +47,10 @@ type ProductFormData = {
   seoTitle?: string;
   seoDescription?: string;
   variants: VariantForm[];
+  coverId?: string | null;
+  images?: MediaItem[];
+  /** новый фоллбек из сервера, если есть */
+  coverFallbackUrl?: string | null;
 };
 
 export default function ProductForm({
@@ -65,17 +61,33 @@ export default function ProductForm({
   brands: { id: string; name: string }[];
 }) {
   const router = useRouter();
+
   const [data, setData] = useState<ProductFormData>(
-    product ?? { status: 'DRAFT', variants: [{ position: 0 }, { position: 1 }, { position: 2 }] },
+    product ?? {
+      status: 'DRAFT',
+      variants: [{ position: 0 }, { position: 1 }, { position: 2 }],
+      images: [],
+      coverId: null,
+    },
   );
+
+  useEffect(() => {
+    if (!data.images) return;
+    const ok = data.images.some((m) => m.id === data.coverId);
+    if (!ok) setData((d) => ({ ...d, coverId: d.images![0]?.id ?? null }));
+  }, [data.images, data.coverId]);
+
   const save = async () => {
     const parsed = schema.parse({
       ...data,
       variants: data.variants ?? [],
+      coverId: data.coverId ?? null,
     });
+
     const payload = {
       ...parsed,
-      status: parsed.status as ProductStatus,
+      coverId: data.coverId ?? null,
+      imageIds: (data.images ?? []).map((m) => m.id),
     };
 
     const res = await fetch('/api/products/save', {
@@ -92,10 +104,7 @@ export default function ProductForm({
   };
 
   const addVariant = () => {
-    setData((d) => ({
-      ...d,
-      variants: [...d.variants, { position: d.variants.length }],
-    }));
+    setData((d) => ({ ...d, variants: [...d.variants, { position: d.variants.length }] }));
   };
 
   return (
@@ -115,6 +124,7 @@ export default function ProductForm({
       </div>
 
       <div className="grid gap-6 lg:grid-cols-[1fr_320px]">
+        {/* Левая колонка */}
         <Card className="space-y-4 p-4">
           <div className="grid gap-3 md:grid-cols-2">
             <div>
@@ -129,7 +139,7 @@ export default function ProductForm({
                 <SelectContent>
                   <SelectItem value="ACTIVE">Активний</SelectItem>
                   <SelectItem value="DRAFT">Чорновик</SelectItem>
-                  <SelectItem value="ARCHIVED">Архів</SelectItem>
+                  <SelectItem value="ARCHIVE">Архів</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -170,7 +180,7 @@ export default function ProductForm({
           <div>
             <div className="mb-2 flex items-center justify-between">
               <div className="text-sm font-medium">Варіанти</div>
-              <Button size="sm" variant="outline" onClick={() => addVariant()}>
+              <Button size="sm" variant="outline" onClick={addVariant}>
                 Додати варіант
               </Button>
             </div>
@@ -217,12 +227,12 @@ export default function ProductForm({
         </Card>
 
         <Card className="space-y-3 p-4">
-          <div className="text-sm font-medium">Медіафайли</div>
-          {/* Плейсхолдер під інтеграцію з UploadThing/Cloudinary */}
-          <div className="bg-muted aspect-[4/5] rounded-xl border" />
-          <Badge variant="secondary" className="mt-2">
-            + додати
-          </Badge>
+          <MediaPicker
+            value={data.images ?? []}
+            coverId={data.coverId ?? null}
+            imagesChangeAction={(items) => setData({ ...data, images: items })}
+            coverChangeAction={(id) => setData({ ...data, coverId: id })}
+          />
         </Card>
       </div>
     </div>
