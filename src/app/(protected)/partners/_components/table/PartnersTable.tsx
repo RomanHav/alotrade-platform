@@ -21,54 +21,26 @@ import { Button } from '@/components/ui/button';
 import { makeColumns } from './makeColumns';
 import { usePartnersTableState } from './usePartnersTableState';
 import { useTableHotkeys } from './useTableHotkeys';
-import type { Partner } from '../core/types';
 import ConfirmDialog from '../common/ConfirmDialog';
+import type { Partner } from '../core/types';
 
-const MOCK: Partner[] = [
-  {
-    id: 'p1',
-    name: 'Cantina Mare',
-    link: 'https://cantina.example.com',
-    image: '/logos/cantina.png',
-  },
-  { id: 'p2', name: 'Ombra Bar', link: 'https://ombra.example.com', image: '/logos/ombra.png' },
-  {
-    id: 'p3',
-    name: 'Alcotrade',
-    link: 'https://alcotrade.example.com',
-    image: '/logos/alcotrade.png',
-  },
-  { id: 'p4', name: 'Shabo', link: 'https://shabo.example.com', image: '/logos/shabo.png' },
-  {
-    id: 'p5',
-    name: 'Kalyna Group',
-    link: 'https://kalyna.example.com',
-    image: '/logos/kalyna.png',
-  },
-  { id: 'p6', name: 'Wine & Co', link: 'https://wineco.example.com', image: '/logos/wineco.png' },
-  {
-    id: 'p7',
-    name: 'Grape Hub',
-    link: 'https://grapehub.example.com',
-    image: '/logos/grapehub.png',
-  },
-];
+type Props = {
+  partners: Partner[];
+  onSaveRow?: (p: Partner) => Promise<Partner>;
+  onUploadImage?: (file: File, ctx: { publicId: string }) => Promise<{ url: string }>;
+  onDeleteRows?: (ids: string[]) => void | Promise<void>;
+  search?: string;
+  addTrigger?: number;
+};
 
 export default function PartnersTable({
-  partners = MOCK,
+  partners,
   onSaveRow,
   onUploadImage,
   onDeleteRows,
   search = '',
   addTrigger,
-}: {
-  partners?: Partner[];
-  onSaveRow?: (p: Partner) => void | Promise<void>;
-  onUploadImage?: (file: File) => Promise<string>;
-  onDeleteRows?: (ids: string[]) => void | Promise<void>;
-  search?: string;
-  addTrigger?: number;
-}) {
+}: Props) {
   const [sorting, setSorting] = React.useState<SortingState>([]);
   const [rowSelection, setRowSelection] = React.useState<RowSelectionState>({});
 
@@ -179,17 +151,13 @@ export default function PartnersTable({
       if (editingId && ids.includes(editingId)) {
         cancelAndMaybeRemove(editingId);
       }
-
       setData((prev) => prev.filter((p) => !ids.includes(p.id)));
-
       table.resetRowSelection();
-
       setDrafts((d) => {
         const copy = { ...d };
         ids.forEach((id) => delete copy[id]);
         return copy;
       });
-
       await onDeleteRows?.(ids);
     } catch (e) {
       console.error('Delete error:', e);
@@ -199,7 +167,6 @@ export default function PartnersTable({
   }, [table, editingId, cancelAndMaybeRemove, setData, setDrafts, onDeleteRows]);
 
   const selectedCount = table.getSelectedRowModel().rows.length;
-  
 
   return (
     <div className="w-full">
@@ -261,7 +228,7 @@ export default function PartnersTable({
               onConfirm={handleDeleteSelected}
               disabled={deleting}
               trigger={
-                <Button variant="destructive" disabled={deleting}>
+                <Button variant="destructive" disabled={deleting} className='cursor-pointer'>
                   {deleting ? 'Видаляю…' : `Видалити обрані (${selectedCount})`}
                 </Button>
               }
@@ -274,10 +241,10 @@ export default function PartnersTable({
         </span>
 
         <div className="flex flex-1 items-center justify-end gap-3">
-          <Button className='cursor-pointer' onClick={() => table.previousPage()} disabled={!table.getCanPreviousPage()}>
+          <Button onClick={() => table.previousPage()} disabled={!table.getCanPreviousPage()}>
             Попередня
           </Button>
-          <Button className='cursor-pointer' onClick={() => table.nextPage()} disabled={!table.getCanNextPage()}>
+          <Button onClick={() => table.nextPage()} disabled={!table.getCanNextPage()}>
             Наступна
           </Button>
         </div>
