@@ -6,21 +6,20 @@ import { extractCloudinaryPublicId } from '@/lib/cloudinary-publicid';
 cloudinary.config({ secure: true });
 
 type Body = { name?: string; link?: string | null; image?: string | null };
+type Ctx = { params: { id: string } };
 
-export async function PATCH(req: Request, { params }: { params: { id: string } }) {
+export async function PATCH(req: Request, { params }: Ctx) {
   try {
     const { id } = params;
     const body = (await req.json()) as Body;
 
-    const updates: any = {};
+    const updates: Record<string, unknown> = {};
     if (typeof body.name === 'string') updates.name = body.name;
     if (typeof body.link !== 'undefined') updates.link = body.link;
 
     if (typeof body.image !== 'undefined') {
       if (body.image) {
-        const asset = await prisma.mediaAsset.create({
-          data: { url: body.image },
-        });
+        const asset = await prisma.mediaAsset.create({ data: { url: body.image } });
         updates.logoId = asset.id;
       } else {
         updates.logoId = null;
@@ -33,23 +32,21 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
       include: { logo: true },
     });
 
-    const dto = {
+    return NextResponse.json({
       id: updated.id,
       name: updated.name,
       link: updated.link,
-      image: (updated as any).logo?.url ?? null,
-    };
-
-    return NextResponse.json(dto);
-  } catch (e: any) {
+      image: updated.logo?.url ?? null,
+    });
+  } catch (e) {
     console.error('Update partner error:', e);
     return NextResponse.json({ error: 'Update failed' }, { status: 500 });
   }
 }
 
-export async function DELETE(_req: Request, { params }: { params: { id: string } }) {
+export async function DELETE(_req: Request, ctx: Ctx) {
   try {
-    const { id } = params;
+    const { id } = ctx.params;
 
     const partner = await prisma.partner.findUnique({
       where: { id },
