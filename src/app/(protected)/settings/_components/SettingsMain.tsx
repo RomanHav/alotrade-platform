@@ -45,7 +45,7 @@ export default function SettingsMain({ role, seoSettings }: { role: RoleProp; se
 
   return (
     <AddUserModalProvider>
-      <div className="px-4 pt-16">
+      <div className="px-8 pt-16">
         <div className="mb-9 flex items-center justify-between">
           <h1 className="text-4xl">Налаштування</h1>
           <Button
