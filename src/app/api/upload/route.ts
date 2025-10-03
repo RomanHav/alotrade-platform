@@ -9,7 +9,7 @@ cloudinary.config({
   api_secret: process.env.CLOUDINARY_API_SECRET,
 });
 
-// POST /api/upload (FormData: file, alt?, folder?)
+// POST /api/upload  (FormData: file, alt?, folder?)
 export async function POST(req: Request) {
   try {
     const form = await req.formData();
@@ -68,7 +68,6 @@ export async function POST(req: Request) {
   }
 }
 
-// DELETE /api/upload?public_id=...&mediaId=...
 export async function DELETE(req: Request) {
   try {
     const { searchParams } = new URL(req.url);
@@ -82,9 +81,10 @@ export async function DELETE(req: Request) {
       );
     }
 
+    let cloud: unknown = null;
     if (publicId) {
       try {
-        await cloudinary.uploader.destroy(publicId, { resource_type: 'image' });
+        cloud = await cloudinary.uploader.destroy(publicId, { resource_type: 'image' });
       } catch {}
     }
 
@@ -92,12 +92,13 @@ export async function DELETE(req: Request) {
       await prisma.$transaction([
         prisma.product.updateMany({ where: { coverId: mediaId }, data: { coverId: null } }),
         prisma.brand.updateMany({ where: { coverId: mediaId }, data: { coverId: null } }),
+        prisma.productVariant.updateMany({ where: { imageId: mediaId }, data: { imageId: null } }),
         prisma.productImage.deleteMany({ where: { mediaId } }),
-        prisma.mediaAsset.deleteMany({ where: { id: mediaId } }), // idempotent
+        prisma.mediaAsset.deleteMany({ where: { id: mediaId } }),
       ]);
     }
 
-    return NextResponse.json({ ok: true });
+    return NextResponse.json({ ok: true, cloud }, { status: 200 });
   } catch (e: unknown) {
     const msg = e instanceof Error ? e.message : 'Помилка видалення';
     return NextResponse.json({ ok: false, error: msg }, { status: 500 });
