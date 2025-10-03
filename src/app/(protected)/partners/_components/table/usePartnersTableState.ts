@@ -4,7 +4,7 @@ import type { Partner } from '../core/types';
 
 export function usePartnersTableState(
   initial: Partner[],
-  onSaveRow?: (p: Partner) => void | Promise<void>,
+  onSaveRow?: (p: Partner) => Promise<Partner>,
 ) {
   const [data, setData] = React.useState<Partner[]>(initial);
   const [editingId, setEditingId] = React.useState<string | null>(null);
@@ -21,7 +21,6 @@ export function usePartnersTableState(
   const onCancelEdit = React.useCallback((id: string) => {
     setEditingId((curr) => (curr === id ? null : curr));
     setDrafts((d) => {
-      // eslint-disable-next-line @typescript-eslint/no-unused-vars
       const { [id]: _remove, ...rest } = d;
       return rest;
     });
@@ -47,21 +46,22 @@ export function usePartnersTableState(
         link: (draft.link ?? '') || null,
         image: (draft.image ?? '') || null,
       };
-
       setData((prev) => prev.map((p) => (p.id === id ? nextRow : p)));
 
       try {
-        await onSaveRow?.(nextRow);
+        const saved = (await onSaveRow?.(nextRow)) ?? nextRow;
+
+        setData((prev) => prev.map((p) => (p.id === id ? saved : p)));
+
+        setDrafts((d) => {
+          const { [id]: _remove, ...rest } = d;
+          return rest;
+        });
+        setEditingId((curr) => (curr === id ? null : curr));
       } catch (e) {
         console.error(e);
+        alert('Помилка збереження');
       }
-
-      setDrafts((d) => {
-        // eslint-disable-next-line @typescript-eslint/no-unused-vars
-        const { [id]: _remove, ...rest } = d;
-        return rest;
-      });
-      setEditingId((curr) => (curr === id ? null : curr));
     },
     [drafts, onSaveRow],
   );

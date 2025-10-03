@@ -11,6 +11,7 @@ import { RowCheckbox } from '../cells/RowCheckbox';
 import { SelectAllCheckbox } from '../cells/SelectAllCheckbox';
 import { COL_WIDTHS, ukCollator } from '../core/constants';
 import type { Partner, EditOptions } from '../core/types';
+import { extractCloudinaryPublicId } from '@/lib/cloudinary-publicid';
 
 export function makeColumns(opts: EditOptions): ColumnDef<Partner>[] {
   const { editingId, drafts, onDraftChange, onStartEdit, onCancelEdit, onSaveEdit, onUploadImage } =
@@ -36,16 +37,28 @@ export function makeColumns(opts: EditOptions): ColumnDef<Partner>[] {
         const r = row.original;
         const isEditing = r.id === editingId;
         const draft = drafts[r.id] ?? {};
-        const current = (isEditing ? draft.image : r.image) ?? '';
+        const currentUrl = (isEditing ? draft.image : r.image) ?? '';
         const alt = (isEditing ? draft.name : r.name) || 'logo';
+
         const handlePick = async (file: File) => {
-          const nextUrl = onUploadImage ? await onUploadImage(file) : URL.createObjectURL(file);
-          onDraftChange(r.id, 'image', nextUrl);
+          try {
+            if (!onUploadImage) return;
+
+            const fromUrl = extractCloudinaryPublicId(currentUrl);
+
+            const publicId = fromUrl ?? `Alcotrade/partners/${r.id}`;
+
+            const { url } = await onUploadImage(file, { publicId });
+            onDraftChange(r.id, 'image', url);
+          } catch (e) {
+            console.error('Image upload error:', e);
+          }
         };
+
         return (
           <div className="flex w-full items-center justify-center">
             <div className="w-10">
-              <ImageCell src={current} alt={alt} editing={isEditing} onPickFile={handlePick} />
+              <ImageCell src={currentUrl} alt={alt} editing={isEditing} onPickFile={handlePick} />
             </div>
           </div>
         );
@@ -59,7 +72,7 @@ export function makeColumns(opts: EditOptions): ColumnDef<Partner>[] {
           <Button
             variant="ghost"
             onClick={() => column.toggleSorting(isSorted === 'asc')}
-            className="mx-auto flex items-center justify-center gap-1 px-0 font-medium cursor-pointer"
+            className="mx-auto flex cursor-pointer items-center justify-center gap-1 px-0 font-medium"
           >
             Назва партнера
             {isSorted === 'asc' ? (

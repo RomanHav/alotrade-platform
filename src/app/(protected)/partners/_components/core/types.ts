@@ -8,9 +8,9 @@ export type Partner = {
 export type EditOptions = {
   editingId?: string | null;
   drafts: Record<string, Partial<Partner>>;
-  onDraftChange: (id: string, key: keyof Partner, value: string) => void;
+  onDraftChange: (id: string, key: keyof Partner, value: any) => void;
   onStartEdit: (p: Partner) => void;
   onCancelEdit: (id: string) => void;
   onSaveEdit: (id: string) => void;
-  onUploadImage?: (file: File) => Promise<string>;
+  onUploadImage?: (file: File, ctx: { publicId: string }) => Promise<{ url: string }>;
 };
