@@ -44,33 +44,28 @@ export async function PATCH(req: Request, { params }: Ctx) {
   }
 }
 
-export async function DELETE(_req: Request, ctx: Ctx) {
-  try {
-    const { id } = ctx.params;
+export async function DELETE(_req: Request, ctx: unknown) {
+  const { id } = (ctx as { params: { id: string } }).params;
 
-    const partner = await prisma.partner.findUnique({
-      where: { id },
-      include: { logo: true },
-    });
+  const partner = await prisma.partner.findUnique({
+    where: { id },
+    include: { logo: true },
+  });
 
-    await prisma.partner.delete({ where: { id } });
+  await prisma.partner.delete({ where: { id } });
 
-    const publicId = extractCloudinaryPublicId(partner?.logo?.url ?? null);
-    if (publicId) {
-      try {
-        await cloudinary.uploader.destroy(publicId, { invalidate: true });
-      } catch (e) {
-        console.warn('Cloudinary destroy failed:', e);
-      }
+  const publicId = extractCloudinaryPublicId(partner?.logo?.url ?? null);
+  if (publicId) {
+    try {
+      await cloudinary.uploader.destroy(publicId, { invalidate: true });
+    } catch (e) {
+      console.warn('Cloudinary destroy failed:', e);
     }
-
-    if (partner?.logoId) {
-      await prisma.mediaAsset.delete({ where: { id: partner.logoId } }).catch(() => {});
-    }
-
-    return NextResponse.json({ ok: true });
-  } catch (e) {
-    console.error('Delete partner error:', e);
-    return NextResponse.json({ error: 'Delete failed' }, { status: 500 });
   }
+
+  if (partner?.logoId) {
+    await prisma.mediaAsset.delete({ where: { id: partner.logoId } }).catch(() => {});
+  }
+
+  return NextResponse.json({ ok: true });
 }
