@@ -8,6 +8,7 @@ type VariantInput = {
   label?: string | null;
   volumeMl?: number | null;
   position: number;
+  imageId: string | null;
 };
 type SaveInput = {
   id?: string;
@@ -52,6 +53,7 @@ export async function POST(req: Request) {
             label: v.label ?? null,
             volumeMl: v.volumeMl ?? null,
             position: v.position ?? i,
+            imageId: v.imageId ?? null,
           })),
         });
       }
@@ -87,6 +89,7 @@ export async function POST(req: Request) {
             label: v.label ?? null,
             volumeMl: v.volumeMl ?? null,
             position: v.position ?? i,
+            imageId: v.imageId ?? null,
           })),
         });
       }

@@ -21,14 +21,13 @@ enum Theme {
 }
 
 model SiteSettings {
- 
-  id                   Int       @id @default(1)
-  defaultSeoTitle      String?   @db.VarChar(60)
-  defaultSeoDescription String?  @db.VarChar(160)
-  titleSuffix            String   @default("| Alcotrade") @db.VarChar(30)
+  id                    Int     @id @default(1)
+  defaultSeoTitle       String? @db.VarChar(60)
+  defaultSeoDescription String? @db.VarChar(160)
+  titleSuffix           String  @default("| Alcotrade") @db.VarChar(30)
 
-  ogImageUrl           String?
-  updatedAt            DateTime  @updatedAt
+  ogImageUrl String?
+  updatedAt  DateTime @updatedAt
 }
 
 model User {
@@ -111,7 +110,11 @@ model MediaAsset {
 
   Product Product[]
 
-  Brand Brand[]
+  Brand         Brand[]
+  variantImages ProductVariant[] @relation("VariantImage")
+
+  Partner        Partner[]        @relation(name: "PartnerLogo")
+  ProductVariant ProductVariant[]
 }
 
 model Product {
@@ -150,8 +153,12 @@ model ProductVariant {
   volumeMl Int?
   position Int     @default(0)
 
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  imageId String?
+  image   MediaAsset? @relation(fields: [imageId], references: [id], onDelete: SetNull)
+
+  createdAt  DateTime     @default(now())
+  updatedAt  DateTime     @updatedAt
+  MediaAsset MediaAsset[] @relation("VariantImage")
 
   @@index([productId])
 }
@@ -194,4 +201,19 @@ model Brand {
 
   @@index([name])
   @@index([status])
+}
+
+model Partner {
+  id          String  @id @default(cuid())
+  name        String
+  description String?
+  link        String? @unique
+
+  logoId String?     @unique
+  logo   MediaAsset? @relation(name: "PartnerLogo", fields: [logoId], references: [id], onDelete: SetNull)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([name])
 }
